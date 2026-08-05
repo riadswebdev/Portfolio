@@ -176,7 +176,7 @@ export default function FrameScrollAnimation({
           className="fixed inset-0 w-full h-full object-cover -z-10 pointer-events-none"
         />
         {!isLoaded && (
-          <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/90 text-white gap-3 z-50">
+          <div className="fixed inset-0 flex flex-col items-center justify-center bg-black text-white gap-3 z-50">
             <div className="w-10 h-10 border-2 border-white/20 border-t-cyan-500 rounded-full animate-spin" />
             <p className="text-xs font-mono tracking-widest text-zinc-400">
               PRELOADING ASSETS {Math.round((loadedCount / totalFrames) * 100)}%

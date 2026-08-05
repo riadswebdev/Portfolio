@@ -7,6 +7,8 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import SkillsOverview from "./components/SkillsOverview";
 
+import GithubProjects from "./components/GithubProjects";
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
   const [activeSection, setActiveSection] = useState("home");
@@ -75,8 +77,8 @@ export default function Home() {
 
           <div className="pt-2 flex flex-wrap gap-4 items-center">
             <a
-              href="#contact"
-              className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-600/25 transition-all flex items-center gap-2"
+              href="/contact"
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2"
             >
               Get In Touch
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -157,78 +159,8 @@ export default function Home() {
       {/* Skills Overview with Progress Bars */}
       <SkillsOverview />
 
-      {/* Projects Showcase Section */}
-      <section id="projects" className="py-28 px-6 max-w-7xl mx-auto border-t border-zinc-900">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-          <div className="space-y-2">
-            <span className="text-xs font-mono uppercase tracking-widest text-blue-400">Featured Work</span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">Recent Projects & Labs</h2>
-          </div>
-
-          {/* Filter Tabs */}
-          <div className="flex items-center gap-2 p-1.5 rounded-xl bg-transparent border border-zinc-800">
-            {[
-              { id: "all", label: "All Work" },
-              { id: "webgl", label: "Animation & 3D" },
-              { id: "frontend", label: "Web Apps" },
-              { id: "design", label: "Design Systems" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Projects Grid */}
-        <div className="grid md:grid-cols-2 gap-8">
-          {filteredProjects.map((project, idx) => (
-            <div
-              key={idx}
-              className="group p-8 rounded-3xl bg-transparent border border-zinc-800/80 hover:border-zinc-700 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-mono text-blue-400 uppercase">{project.category}</span>
-                  <span className="px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-300 font-medium">
-                    {project.stats}
-                  </span>
-                </div>
-
-                <h3 className="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">
-                  {project.title}
-                </h3>
-
-                <p className="text-zinc-400 text-sm leading-relaxed font-light">
-                  {project.description}
-                </p>
-              </div>
-
-              <div className="pt-8 border-t border-zinc-800/60 mt-8 flex items-center justify-between">
-                <div className="flex flex-wrap gap-2">
-                  {project.tags.map((tag) => (
-                    <span key={tag} className="text-xs text-zinc-500">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-
-                <button className="text-xs font-medium text-white flex items-center gap-1.5 group-hover:translate-x-1 transition-transform">
-                  View Demo →
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Dynamic GitHub Portfolio Projects Section — preview of latest 6 */}
+      <GithubProjects username="riadswebdev" maxItems={6} showSearch={false} />
 
       {/* Education Section */}
       <section id="education" className="py-28 px-6 max-w-7xl mx-auto border-t border-zinc-900">
@@ -276,7 +208,7 @@ export default function Home() {
               allow="autoplay; fullscreen"
             />
             {/* Dark overlay for readability */}
-            <div className="absolute inset-0 backdrop-blur" />
+            <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px]" />
           </div>
 
           <div className="max-w-2xl space-y-6 relative z-10">
@@ -291,7 +223,7 @@ export default function Home() {
             <div className="pt-4 flex flex-wrap gap-4">
               <a
                 href="/contact"
-                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-600/25 transition-all flex items-center gap-2"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2"
               >
                 Send Message
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
