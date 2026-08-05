@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import Link from "next/link";
 
 export interface ParsedTechStack {
   frontend: string[];
@@ -58,6 +60,84 @@ const TECH_DICTIONARY = {
   ]
 };
 
+// ─── Category filter definitions ────────────────────────────────────────────
+const CATEGORIES = [
+  { id: "all",        label: "All" },
+  { id: "react",      label: "React" },
+  { id: "nextjs",     label: "Next.js" },
+  { id: "typescript", label: "TypeScript" },
+  { id: "fullstack",  label: "Full Stack" },
+  { id: "3d",         label: "3D / Canvas" },
+];
+
+function getRepoCategories(repo: GithubRepo): string[] {
+  const cats: string[] = ["all"];
+  const ft = repo.techStack?.frontend ?? [];
+  const bk = repo.techStack?.backend  ?? [];
+  const topics = repo.topics ?? [];
+
+  if (ft.some((t) => /react/i.test(t)))                            cats.push("react");
+  if (ft.some((t) => /next\.?js/i.test(t)))                        cats.push("nextjs");
+  if (ft.some((t) => /typescript/i.test(t)))                       cats.push("typescript");
+  if (ft.length > 0 && bk.length > 0)                              cats.push("fullstack");
+  if (topics.some((t) => /3d|threejs|webgl|canvas/i.test(t)))      cats.push("3d");
+
+  return cats;
+}
+
+// ─── 3-D Tilt Card ──────────────────────────────────────────────────────────
+function TiltCard({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const { left, top, width, height } = el.getBoundingClientRect();
+    const x = (e.clientX - left) / width  - 0.5;   // -0.5 … +0.5
+    const y = (e.clientY - top)  / height - 0.5;
+    el.style.transition = "transform 0.08s linear";
+    el.style.transform  = `perspective(900px) rotateY(${x * 24}deg) rotateX(${-y * 24}deg) scale3d(1.03,1.03,1.03)`;
+    // move the glint overlay
+    const glint = el.querySelector<HTMLElement>(".tilt-glint");
+    if (glint) {
+      glint.style.background = `radial-gradient(circle at ${(x + 0.5) * 100}% ${(y + 0.5) * 100}%, rgba(255,255,255,0.12) 0%, transparent 65%)`;
+      glint.style.opacity = "1";
+    }
+  };
+
+  const onLeave = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.transition = "transform 0.55s cubic-bezier(.23,1,.32,1)";
+    el.style.transform  = "perspective(900px) rotateY(0deg) rotateX(0deg) scale3d(1,1,1)";
+    const glint = el.querySelector<HTMLElement>(".tilt-glint");
+    if (glint) glint.style.opacity = "0";
+  };
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+      className={className}
+      style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+    >
+      {/* glint layer — sits on top, pointer-events:none */}
+      <div
+        className="tilt-glint absolute inset-0 rounded-3xl pointer-events-none z-10"
+        style={{ opacity: 0, transition: "opacity 0.2s" }}
+      />
+      {children}
+    </div>
+  );
+}
+
 export default function GithubProjects({
   username = "riadswebdev",
   maxItems,
@@ -70,6 +150,7 @@ export default function GithubProjects({
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   // Parses Markdown sections from README
   const parseReadmeSections = (readmeText: string, topics: string[] = [], language: string | null = null) => {
@@ -347,7 +428,12 @@ export default function GithubProjects({
     new Set(repos.flatMap((repo) => repo.topics || []))
   );
 
-  // Filter repos based on search and topic tab
+  // Which categories actually have repos (to show/hide buttons dynamically)
+  const availableCategories = CATEGORIES.filter(
+    (cat) => cat.id === "all" || repos.some((r) => getRepoCategories(r).includes(cat.id))
+  );
+
+  // Filter repos based on search, topic, and category
   const filteredRepos = repos.filter((repo) => {
     const matchesSearch =
       repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -357,7 +443,10 @@ export default function GithubProjects({
     const matchesTopic =
       selectedTopic === "all" || (repo.topics && repo.topics.includes(selectedTopic));
 
-    return matchesSearch && matchesTopic;
+    const matchesCategory =
+      selectedCategory === "all" || getRepoCategories(repo).includes(selectedCategory);
+
+    return matchesSearch && matchesTopic && matchesCategory;
   });
 
   const openModal = (repo: GithubRepo) => {
@@ -379,7 +468,13 @@ export default function GithubProjects({
   return (
     <section id="projects" className="py-24 px-6 max-w-7xl mx-auto border-t border-zinc-900">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+      <motion.div
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: false, margin: "-80px" }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6"
+      >
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-mono text-blue-400">
             <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
@@ -388,7 +483,7 @@ export default function GithubProjects({
           <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
             GitHub Portfolio Projects
           </h2>
-          <p className="text-zinc-400 text-sm max-w-xl">
+          {/* <p className="text-zinc-400 text-sm max-w-xl">
             Dynamically retrieved from{" "}
             <a
               href={`https://github.com/${username}`}
@@ -399,7 +494,7 @@ export default function GithubProjects({
               @{username}
             </a>
             . Parsed by Frontend, Backend, Database, Dev Tools, and Key Features.
-          </p>
+          </p> */}
         </div>
 
         {/* Search — hidden on homepage preview */}
@@ -416,7 +511,7 @@ export default function GithubProjects({
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-xs"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-xs cursor-pointer"
                 >
                   ✕
                 </button>
@@ -424,29 +519,49 @@ export default function GithubProjects({
             </div>
           </div>
         )}
+      </motion.div>
+
+      {/* ── Category Filter Bar ─────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        {availableCategories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => { setSelectedCategory(cat.id); setSelectedTopic("all"); }}
+            className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              selectedCategory === cat.id
+                ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30 scale-105"
+                : "bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/60"
+            }`}
+          >
+            {cat.label}
+            {cat.id === "all" && (
+              <span className="ml-1.5 opacity-60">({repos.length})</span>
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* Topics Filter Bar */}
+      {/* ── Topic Pills (secondary filter) ─────────────────────────── */}
       {allTopics.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-10 pb-2 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setSelectedTopic("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               selectedTopic === "all"
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                : "bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                ? "bg-zinc-700 text-white"
+                : "bg-zinc-900/60 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
             }`}
           >
-            All Topics ({repos.length})
+            All Topics
           </button>
           {allTopics.map((topic) => (
             <button
               key={topic}
               onClick={() => setSelectedTopic(topic)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 selectedTopic === topic
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                  : "bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                  ? "bg-zinc-700 text-white"
+                  : "bg-zinc-900/60 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
               }`}
             >
               #{topic}
@@ -481,7 +596,7 @@ export default function GithubProjects({
           <div className="flex justify-center gap-3">
             <button
               onClick={() => window.location.reload()}
-              className="px-5 py-2 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-500 transition-colors"
+              className="px-5 py-2 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-500 transition-colors cursor-pointer"
             >
               Retry
             </button>
@@ -497,8 +612,9 @@ export default function GithubProjects({
             onClick={() => {
               setSearchQuery("");
               setSelectedTopic("all");
+              setSelectedCategory("all");
             }}
-            className="mt-4 px-4 py-2 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium transition-colors"
+            className="mt-4 px-4 py-2 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium transition-colors cursor-pointer"
           >
             Reset Filters
           </button>
@@ -508,12 +624,22 @@ export default function GithubProjects({
       {/* Repo Cards Grid */}
       {!loading && !error && displayedRepos.length > 0 && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {displayedRepos.map((repo) => {
+          {displayedRepos.map((repo, index) => {
             return (
-              <div
+              <motion.div
                 key={repo.id}
-                className="group p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/80 hover:border-blue-500/50 hover:bg-zinc-900/60 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between overflow-hidden shadow-xl"
+                initial={{ opacity: 0, y: 48 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: false, margin: "-60px 0px -60px 0px" }}
+                transition={{
+                  duration: 0.52,
+                  delay: (index % 3) * 0.1,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
               >
+                <TiltCard
+                  className="relative group p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/80 hover:border-blue-500/50 hover:bg-zinc-900/60 transition-colors flex flex-col justify-between overflow-hidden shadow-xl h-full"
+                >
                 <div>
                   {/* Banner image or preview fallback */}
                   <div className="relative w-full h-48 rounded-2xl bg-zinc-950 overflow-hidden mb-5 border border-zinc-800/60 flex items-center justify-center">
@@ -571,7 +697,7 @@ export default function GithubProjects({
 
                   <button
                     onClick={() => openModal(repo)}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     View Details
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -579,7 +705,8 @@ export default function GithubProjects({
                     </svg>
                   </button>
                 </div>
-              </div>
+              </TiltCard>
+              </motion.div>
             );
           })}
         </div>
@@ -588,15 +715,15 @@ export default function GithubProjects({
       {/* View All Projects CTA — only shown on homepage when capped */}
       {!loading && !error && hasMore && (
         <div className="mt-12 flex justify-center">
-          <a
+          <Link
             href="/project"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 cursor-pointer"
           >
             View All Projects
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
-          </a>
+          </Link>
         </div>
       )}
 
@@ -608,7 +735,7 @@ export default function GithubProjects({
             {/* Close Button Floating Top-Right */}
             <button
               onClick={closeModal}
-              className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white hover:bg-black transition-colors"
+              className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white hover:bg-black transition-colors cursor-pointer"
             >
               ✕
             </button>

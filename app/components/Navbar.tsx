@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const navLinks = [
   {
@@ -82,7 +83,7 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
     <header className="fixed top-5 left-0 right-0 z-50 px-4 sm:px-8">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
-        <a href="#" className="flex items-center gap-2.5 group">
+        <Link href="/" className="flex items-center gap-2.5 group">
           <div className="group-hover:scale-105 transition-transform drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]">
             <Image
               src="/logo.png"
@@ -94,16 +95,16 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
             />
           </div>
          
-        </a>
+        </Link>
 
         {/* Floating Pill Navigation */}
         <nav className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full border border-zinc-800/90 backdrop-blur-sm shadow-2xl shadow-black/80 text-xs sm:text-sm font-medium text-zinc-400">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.id}
               href={link.href}
               onClick={() => setActive(link.id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
                 active === link.id
                   ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold"
                   : "hover:text-zinc-200 hover:bg-zinc-800/60"
@@ -111,7 +112,7 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
             >
               {link.icon}
               <span>{link.label}</span>
-            </a>
+            </Link>
           ))}
         </nav>
 
