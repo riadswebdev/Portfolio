@@ -125,7 +125,7 @@ export default function AboutClient() {
             <div className="flex flex-wrap gap-4 pt-4">
               <a
                 href="/contact"
-                className="px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -133,15 +133,16 @@ export default function AboutClient() {
                 Let&apos;s Work Together
               </a>
               <a
-                href="/resume.pdf"
+                href="/Md%20Riad%20Shekh%20Final%20Resume.pdf"
                 target="_blank"
+                download="Md Riad Shekh Final Resume.pdf"
                 rel="noreferrer"
-                className="px-6 py-2.5 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs sm:text-sm font-medium transition-colors flex items-center gap-2"
+                className="px-6 py-3 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 hover:border-cyan-500/50 text-zinc-200 hover:text-white text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shadow-lg group cursor-pointer"
               >
-                <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                Download CV
+                <span>Download Resume</span>
               </a>
             </div>
           </div>

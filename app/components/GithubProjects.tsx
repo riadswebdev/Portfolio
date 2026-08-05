@@ -559,19 +559,41 @@ export default function GithubProjects({
         </div>
       )}
 
-      {/* Loading state */}
+      {/* Loading state: Card-level skeleton loading spinner with semi-transparent background */}
       {loading && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1, 2, 3, 4, 5, 6].map((idx) => (
+          {Array.from({ length: maxItems || 6 }).map((_, idx) => (
             <div
               key={idx}
-              className="p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800/60 animate-pulse flex flex-col justify-between h-96"
+              className="relative p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 backdrop-blur-sm shadow-xl flex flex-col justify-between h-[420px] overflow-hidden"
             >
-              <div className="space-y-4">
-                <div className="h-44 bg-zinc-800/50 rounded-2xl w-full" />
-                <div className="h-6 bg-zinc-800/50 rounded w-3/4" />
-                <div className="h-4 bg-zinc-800/50 rounded w-full" />
-                <div className="h-4 bg-zinc-800/50 rounded w-2/3" />
+              <div>
+                {/* Skeleton Banner with Embedded Dual-Ring Spinner */}
+                <div className="relative w-full h-48 rounded-2xl bg-zinc-950/60 border border-zinc-800/50 overflow-hidden mb-5 flex items-center justify-center">
+                  {/* Glassmorphic Shimmer Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent animate-pulse" />
+
+                  {/* Card Loading Spinner */}
+                  <div className="relative flex items-center justify-center">
+                    <div className="w-10 h-10 border-2 border-blue-500/20 border-t-blue-400 border-r-cyan-400 rounded-full animate-spin" />
+                    <div className="absolute w-3 h-3 rounded-full bg-blue-500/30 animate-ping" />
+                  </div>
+                </div>
+
+                {/* Title & Description Skeleton */}
+                <div className="space-y-3">
+                  <div className="h-6 bg-zinc-800/50 rounded-lg w-2/3 animate-pulse" />
+                  <div className="space-y-2 pt-1">
+                    <div className="h-3.5 bg-zinc-800/40 rounded w-full animate-pulse" />
+                    <div className="h-3.5 bg-zinc-800/40 rounded w-4/5 animate-pulse" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Action Footer Skeleton */}
+              <div className="pt-4 border-t border-zinc-800/60 flex items-center justify-between">
+                <div className="h-4 bg-cyan-500/20 rounded-md w-20 animate-pulse" />
+                <div className="h-8 bg-zinc-800/60 rounded-xl w-28 animate-pulse" />
               </div>
             </div>
           ))}

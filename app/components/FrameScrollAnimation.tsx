@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface FrameScrollAnimationProps {
   totalFrames?: number;
@@ -26,32 +26,16 @@ export default function FrameScrollAnimation({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
-  const [loadedCount, setLoadedCount] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
 
   // Preload frames
   useEffect(() => {
     let isMounted = true;
     const loadedImages: HTMLImageElement[] = [];
-    let loadedCounter = 0;
 
     for (let i = 1; i <= totalFrames; i++) {
       const img = new Image();
       const frameNum = String(i).padStart(3, "0");
       img.src = `${folderPath}/${filePrefix}${frameNum}.${fileExtension}`;
-
-      const handleLoad = () => {
-        if (!isMounted) return;
-        loadedCounter++;
-        setLoadedCount(loadedCounter);
-        if (loadedCounter === totalFrames) {
-          setIsLoaded(true);
-        }
-      };
-
-      img.onload = handleLoad;
-      img.onerror = handleLoad;
-
       loadedImages.push(img);
     }
 
@@ -165,25 +149,15 @@ export default function FrameScrollAnimation({
       }
       cancelAnimationFrame(animationFrameId);
     };
-  }, [isLoaded, totalFrames, backgroundMode]);
+  }, [totalFrames, backgroundMode]);
 
   // Background mode: fixed full-screen canvas, no wrapper div
   if (backgroundMode) {
     return (
-      <>
-        <canvas
-          ref={canvasRef}
-          className="fixed inset-0 w-full h-full object-cover -z-10 pointer-events-none"
-        />
-        {!isLoaded && (
-          <div className="fixed inset-0 flex flex-col items-center justify-center bg-black text-white gap-3 z-50">
-            <div className="w-10 h-10 border-2 border-white/20 border-t-cyan-500 rounded-full animate-spin" />
-            <p className="text-xs font-mono tracking-widest text-zinc-400">
-              PRELOADING ASSETS {Math.round((loadedCount / totalFrames) * 100)}%
-            </p>
-          </div>
-        )}
-      </>
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 w-full h-full object-cover -z-10 pointer-events-none"
+      />
     );
   }
 
@@ -195,16 +169,6 @@ export default function FrameScrollAnimation({
 
         {/* Overlay Content */}
         {children && <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between">{children}</div>}
-
-        {/* Loading Spinner */}
-        {!isLoaded && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white gap-3 z-20 transition-opacity duration-500">
-            <div className="w-10 h-10 border-2 border-white/20 border-t-cyan-500 rounded-full animate-spin" />
-            <p className="text-xs font-mono tracking-widest text-zinc-400">
-              PRELOADING ASSETS {Math.round((loadedCount / totalFrames) * 100)}%
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

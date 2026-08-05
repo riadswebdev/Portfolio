@@ -4,40 +4,48 @@ import { useEffect, useRef, useState, ReactNode } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
-/* ─── Skill Data (Aligned with resume.md) ─────────────────── */
+/* ─── Skill Data ───────────────────────────────────────────── */
 const categories = [
   {
     id: "frontend",
     label: "Frontend Development",
-    desc: "Core user interface & interactive web technologies",
+    desc: "Core UI & interactive web technologies",
     accent: "from-cyan-400 to-blue-500",
     accentText: "text-cyan-400",
-    border: "border-cyan-500/20",
-    glow: "rgba(34,211,238,0.15)",
+    accentBg: "bg-cyan-500/10",
+    border: "border-cyan-500/15 hover:border-cyan-500/40",
+    glow: "rgba(34,211,238,0.08)",
+    glowHover: "rgba(34,211,238,0.18)",
+    headerGrad: "from-cyan-500/10 via-blue-500/5 to-transparent",
+    badgeColor: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
     skills: [
-      { name: "React.js", pct: 92, icon: "react" },
-      { name: "Next.js", pct: 90, icon: "next" },
-      { name: "TypeScript", pct: 85, icon: "ts" },
-      { name: "JavaScript (ES6+)", pct: 95, icon: "js" },
-      { name: "HTML5", pct: 98, icon: "html" },
-      { name: "CSS3", pct: 95, icon: "css" },
+      { name: "React.js",          pct: 92, icon: "react" },
+      { name: "Next.js",           pct: 90, icon: "next"  },
+      { name: "TypeScript",        pct: 85, icon: "ts"    },
+      { name: "JavaScript (ES6+)", pct: 95, icon: "js"    },
+      { name: "HTML5",             pct: 98, icon: "html"  },
+      { name: "CSS3",              pct: 95, icon: "css"   },
     ],
   },
   {
     id: "backend",
     label: "Backend & Database",
-    desc: "Server architecture, API APIs & authentication",
+    desc: "Server architecture, APIs & authentication",
     accent: "from-violet-400 to-purple-600",
     accentText: "text-violet-400",
-    border: "border-violet-500/20",
-    glow: "rgba(167,139,250,0.15)",
+    accentBg: "bg-violet-500/10",
+    border: "border-violet-500/15 hover:border-violet-500/40",
+    glow: "rgba(167,139,250,0.08)",
+    glowHover: "rgba(167,139,250,0.18)",
+    headerGrad: "from-violet-500/10 via-purple-500/5 to-transparent",
+    badgeColor: "bg-violet-500/15 text-violet-400 border-violet-500/25",
     skills: [
-      { name: "Node.js", pct: 88, icon: "node" },
-      { name: "Express.js", pct: 88, icon: "express" },
-      { name: "MongoDB", pct: 85, icon: "mongo" },
-      { name: "REST API", pct: 92, icon: "api" },
-      { name: "Stripe Payment", pct: 82, icon: "stripe" },
-      { name: "Better Auth / Google Auth", pct: 90, icon: "auth" },
+      { name: "Node.js",                  pct: 88, icon: "node"    },
+      { name: "Express.js",               pct: 88, icon: "express" },
+      { name: "MongoDB",                  pct: 85, icon: "mongo"   },
+      { name: "REST API Design",          pct: 92, icon: "api"     },
+      { name: "Stripe Payment",           pct: 82, icon: "stripe"  },
+      { name: "Better Auth / Google Auth",pct: 90, icon: "auth"    },
     ],
   },
   {
@@ -46,14 +54,18 @@ const categories = [
     desc: "Design systems, styling tools & animation",
     accent: "from-pink-400 to-rose-500",
     accentText: "text-pink-400",
-    border: "border-pink-500/20",
-    glow: "rgba(244,114,182,0.15)",
+    accentBg: "bg-pink-500/10",
+    border: "border-pink-500/15 hover:border-pink-500/40",
+    glow: "rgba(244,114,182,0.08)",
+    glowHover: "rgba(244,114,182,0.18)",
+    headerGrad: "from-pink-500/10 via-rose-500/5 to-transparent",
+    badgeColor: "bg-pink-500/15 text-pink-400 border-pink-500/25",
     skills: [
-      { name: "Tailwind CSS", pct: 96, icon: "tailwind" },
-      { name: "HeroUI", pct: 90, icon: "heroui" },
-      { name: "DaisyUI", pct: 88, icon: "daisy" },
-      { name: "Framer Motion", pct: 82, icon: "motion" },
-      { name: "Font Awesome", pct: 90, icon: "fontawesome" },
+      { name: "Tailwind CSS",   pct: 96, icon: "tailwind"   },
+      { name: "HeroUI",         pct: 90, icon: "heroui"     },
+      { name: "DaisyUI",        pct: 88, icon: "daisy"      },
+      { name: "Framer Motion",  pct: 82, icon: "motion"     },
+      { name: "Font Awesome",   pct: 90, icon: "fontawesome"},
     ],
   },
   {
@@ -62,14 +74,18 @@ const categories = [
     desc: "AI-assisted coding, version control & deployment",
     accent: "from-emerald-400 to-teal-500",
     accentText: "text-emerald-400",
-    border: "border-emerald-500/20",
-    glow: "rgba(52,211,153,0.15)",
+    accentBg: "bg-emerald-500/10",
+    border: "border-emerald-500/15 hover:border-emerald-500/40",
+    glow: "rgba(52,211,153,0.08)",
+    glowHover: "rgba(52,211,153,0.18)",
+    headerGrad: "from-emerald-500/10 via-teal-500/5 to-transparent",
+    badgeColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
     skills: [
-      { name: "ChatGPT / Claude", pct: 95, icon: "ai" },
+      { name: "ChatGPT / Claude",           pct: 95, icon: "ai"     },
       { name: "Cursor AI / GitHub Copilot", pct: 92, icon: "cursor" },
-      { name: "Git & GitHub", pct: 92, icon: "git" },
-      { name: "VS Code & Postman", pct: 95, icon: "vscode" },
-      { name: "Vercel & Render", pct: 90, icon: "vercel" },
+      { name: "Git & GitHub",               pct: 92, icon: "git"    },
+      { name: "VS Code & Postman",          pct: 95, icon: "vscode" },
+      { name: "Vercel & Render",            pct: 90, icon: "vercel" },
     ],
   },
 ];
@@ -125,12 +141,12 @@ function Icon({ id }: { id: string }) {
     ),
     express: (
       <svg viewBox="0 0 24 24" fill="currentColor" className={`${cls} text-zinc-300`}>
-        <path d="M24 18.588a1.529 1.529 0 0 1-1.895-.72l-3.45-4.771-.5-.667-4.003 5.444a1.466 1.466 0 0 1-1.802.708l5.158-6.92-4.798-6.251a1.595 1.595 0 0 1 1.9.666l3.576 4.83 3.596-4.81a1.435 1.435 0 0 1 1.788-.668L21.708 7.9l-2.522 3.283a.666.666 0 0 0 0 .994l4.804 6.412zM.002 11.576l.42-2.075c1.154-4.103 5.858-5.81 9.094-3.27 1.895 1.489 2.368 3.597 2.275 5.973H1.116C.943 16.447 4.005 19.009 7.92 17.7a4.078 4.078 0 0 0 2.582-2.876c.207-.666.548-.78 1.174-.588a5.417 5.417 0 0 1-2.589 3.957 6.272 6.272 0 0 1-7.306-.933 6.575 6.575 0 0 1-1.64-3.858c-.013-.394 0-.788 0-1.826zm1.121-.228c1.357.076 2.spinach=2.713.057 4.07.057h4.51a4.136 4.136 0 0 0-4.57-4.125 4.488 4.488 0 0 0-4.01 4.068z"/>
+        <path d="M24 18.588a1.529 1.529 0 0 1-1.895-.72l-3.45-4.771-.5-.667-4.003 5.444a1.466 1.466 0 0 1-1.802.708l5.158-6.92-4.798-6.251a1.595 1.595 0 0 1 1.9.666l3.576 4.83 3.596-4.81a1.435 1.435 0 0 1 1.788-.668L21.708 7.9l-2.522 3.283a.666.666 0 0 0 0 .994l4.804 6.412z"/>
       </svg>
     ),
     git: (
       <svg viewBox="0 0 24 24" fill="currentColor" className={`${cls} text-orange-500`}>
-        <path d="M23.546 10.93L13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6-2.596l-2.48-2.48v6.511a1.838 1.838 0 0 1 .48 3.59 1.838 1.838 0 0 1-2.29-1.769 1.837 1.837 0 0 1 1-1.656V9.801a1.837 1.837 0 0 1-1-1.656 1.838 1.838 0 0 1 .404-1.17L7.024 4.215 .452 10.79a1.55 1.55 0 0 0 0 2.187l10.48 10.478a1.55 1.55 0 0 0 2.186 0l10.428-10.427a1.55 1.55 0 0 0 0-2.188"/>
+        <path d="M23.546 10.93L13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6-2.596l-2.48-2.48v6.511a1.838 1.838 0 0 1 .48 3.59 1.838 1.838 0 0 1-2.29-1.769 1.837 1.837 0 0 1 1-1.656V9.801a1.837 1.837 0 0 1-1-1.656 1.838 1.838 0 0 1 .404-1.17L7.024 4.215.452 10.79a1.55 1.55 0 0 0 0 2.187l10.48 10.478a1.55 1.55 0 0 0 2.186 0l10.428-10.427a1.55 1.55 0 0 0 0-2.188"/>
       </svg>
     ),
     vscode: (
@@ -197,6 +213,7 @@ function Icon({ id }: { id: string }) {
   );
 }
 
+/* ─── Skill Row with Animated Progress Bar ────────────────── */
 function SkillRow({
   skill,
   accent,
@@ -222,21 +239,17 @@ function SkillRow({
       ([entry]) => {
         if (entry.isIntersecting) {
           timer = setTimeout(() => {
-            const duration = 1000; // ms
+            const duration = 1100;
             const start = performance.now();
             const animate = (now: number) => {
               const elapsed = now - start;
-              const progressRatio = Math.min(elapsed / duration, 1);
-              const easeOut = 1 - Math.pow(1 - progressRatio, 3);
-              const val = Math.round(easeOut * skill.pct);
-              setCurrentPct(val);
-
-              if (progressRatio < 1) {
-                animFrame = requestAnimationFrame(animate);
-              }
+              const ratio = Math.min(elapsed / duration, 1);
+              const easeOut = 1 - Math.pow(1 - ratio, 3);
+              setCurrentPct(Math.round(easeOut * skill.pct));
+              if (ratio < 1) animFrame = requestAnimationFrame(animate);
             };
             animFrame = requestAnimationFrame(animate);
-          }, index * 50);
+          }, index * 60);
         } else {
           clearTimeout(timer);
           cancelAnimationFrame(animFrame);
@@ -255,21 +268,29 @@ function SkillRow({
   }, [skill.pct, index]);
 
   return (
-    <div ref={ref} className={`py-3 ${!isLast ? "border-b border-white/5" : ""}`}>
-      <div className="flex items-center justify-between mb-2">
+    <div ref={ref} className={`py-3.5 ${!isLast ? "border-b border-white/[0.05]" : ""} group/row`}>
+      <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 group-hover/row:border-white/10 flex items-center justify-center shrink-0 transition-colors duration-200">
             <Icon id={skill.icon} />
           </div>
-          <span className="text-sm font-medium text-zinc-200">{skill.name}</span>
+          <span className="text-sm font-medium text-zinc-300 group-hover/row:text-white transition-colors duration-200">
+            {skill.name}
+          </span>
         </div>
-        <span className="text-sm font-bold text-zinc-300 tabular-nums">{currentPct}%</span>
+        <span className="text-xs font-bold text-zinc-400 tabular-nums group-hover/row:text-zinc-200 transition-colors">
+          {currentPct}%
+        </span>
       </div>
-      {/* Progress bar */}
-      <div className="h-[3px] rounded-full bg-white/5 overflow-hidden">
+      {/* Progress track */}
+      <div className="h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
         <div
-          className={`h-full rounded-full bg-gradient-to-r ${accent} transition-all duration-300 ease-out`}
-          style={{ width: `${currentPct}%` }}
+          className={`h-full rounded-full bg-gradient-to-r ${accent} shadow-sm`}
+          style={{
+            width: `${currentPct}%`,
+            transition: "width 0.05s linear",
+            boxShadow: currentPct > 0 ? `0 0 8px rgba(255,255,255,0.15)` : "none",
+          }}
         />
       </div>
     </div>
@@ -280,19 +301,28 @@ function SkillRow({
 function CategoryCard({ cat }: { cat: typeof categories[0] }) {
   return (
     <div
-      className="rounded-2xl border border-white/8 bg-[#080c14]/60 backdrop-blur-md p-6 flex flex-col justify-between"
-      style={{ boxShadow: `0 0 40px ${cat.glow}` }}
+      className={`group relative rounded-2xl border ${cat.border} backdrop-blur-sm overflow-hidden flex flex-col transition-all duration-400 hover:-translate-y-1 hover:shadow-2xl`}
+      style={{
+     
+        boxShadow: `0 0 30px ${cat.glow}`,
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.boxShadow = `0 0 50px ${cat.glowHover}, 0 20px 60px rgba(0,0,0,0.4)`;
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.boxShadow = `0 0 30px ${cat.glow}`;
+      }}
     >
-      {/* Card header */}
-      <div className="mb-4">
-        <p className={`text-[11px] font-bold tracking-[0.2em] uppercase ${cat.accentText} mb-1`}>
+      {/* Gradient header band */}
+      <div className={`px-6 pt-6 pb-5 bg-gradient-to-br ${cat.headerGrad}`}>
+        <span className={`inline-block text-[10px] font-bold tracking-[0.22em] uppercase px-2.5 py-1 rounded-full border ${cat.badgeColor} mb-3`}>
           {cat.label}
-        </p>
-        <p className="text-xs text-zinc-400 font-light">{cat.desc}</p>
+        </span>
+        <p className="text-xs text-zinc-400 font-light leading-relaxed">{cat.desc}</p>
       </div>
 
       {/* Skill rows */}
-      <div className="space-y-1">
+      <div className="px-6 pb-6 flex-1">
         {cat.skills.map((skill, i) => (
           <SkillRow
             key={skill.name}
@@ -303,6 +333,34 @@ function CategoryCard({ cat }: { cat: typeof categories[0] }) {
           />
         ))}
       </div>
+
+      {/* Subtle corner glow on hover */}
+      <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ background: cat.glow.replace("0.08", "0.25") }} />
+    </div>
+  );
+}
+
+/* ─── Summary Stats Bar ──────────────────────────────────── */
+function StatsBanner() {
+  const stats = [
+    { label: "Technologies",  value: "22+", color: "text-cyan-500"    },
+    { label: "Frontend Stack",value: "6",   color: "text-violet-500"  },
+    { label: "Backend Stack", value: "6",   color: "text-pink-500"    },
+    { label: "AI & Dev Tools",value: "5",   color: "text-emerald-500" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {stats.map((s) => (
+        <div
+          key={s.label}
+          className="flex flex-col items-center justify-center py-5 px-4 rounded-2xl backdrop-blur-0.5 border border-white/[0.06] hover:border-white/[0.12] backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5"
+        >
+          <p className={`text-3xl font-black ${s.color} tracking-tight`}>{s.value}</p>
+          <p className="text-[11px] text-zinc-200 font-mono mt-1 tracking-wide">{s.label}</p>
+        </div>
+      ))}
     </div>
   );
 }
@@ -310,28 +368,46 @@ function CategoryCard({ cat }: { cat: typeof categories[0] }) {
 /* ─── Client View ────────────────────────────────────────── */
 export default function SkillClient() {
   return (
-    <div className="min-h-screen bg-[#07090e] text-zinc-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-400 flex flex-col justify-between">
+    <div className="relative min-h-screen font-sans selection:bg-cyan-500/30 selection:text-cyan-400 flex flex-col justify-between overflow-hidden">
+      {/* Background Video */}
+      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden">
+        <video
+          src="https://res.cloudinary.com/djgg1xzaj/video/upload/v1785932605/Scene___Skills_Section_Prof_f3gxh1.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover"
+        />
+        {/* Layered dark vignette */}
+        {/* <div className="absolute inset-0 bg-gradient-to-b from-[#07090e]/80 via-transparent to-[#07090e]/80" /> */}
+        <div className="absolute inset-0 backdrop-blur-[1px]" />
+      </div>
+
       <Navbar activeSection="skills" />
 
-      <main className="pt-32 pb-24 px-6 max-w-5xl mx-auto w-full space-y-12">
-        {/* Hero header */}
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-cyan-400">
+      <main className="relative z-10 pt-32 pb-28 px-6 max-w-5xl mx-auto w-full space-y-14">
+        {/* ── Hero Header ── */}
+        <div className="text-center max-w-2xl mx-auto space-y-5">
+          <span className="inline-block text-[10px] font-bold tracking-[0.25em] uppercase text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3.5 py-1.5 rounded-full">
             Technical Proficiency
-          </p>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight text-white">
+          </span>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-white">
             Skills &amp;{" "}
-            <span className="bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-400 bg-clip-text text-transparent">
               Technologies
             </span>
           </h1>
-          <p className="text-zinc-400 text-sm sm:text-base font-light leading-relaxed">
-            Technologies and development tools derived from my active projects and software engineering experience.
+          <p className="text-zinc-200 text-sm sm:text-base font-light leading-relaxed max-w-xl mx-auto">
+            Technologies and development tools derived from my active projects and full-stack engineering experience.
           </p>
         </div>
 
-        {/* 2 × 2 grid */}
-        <div className="grid md:grid-cols-2 gap-6">
+        {/* ── Stats Banner ── */}
+        <StatsBanner />
+
+        {/* ── 2 × 2 Skill Grid ── */}
+        <div className="grid md:grid-cols-2 gap-5">
           {categories.map((cat) => (
             <CategoryCard key={cat.id} cat={cat} />
           ))}

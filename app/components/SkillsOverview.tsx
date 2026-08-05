@@ -12,52 +12,39 @@ const skills = [
 ];
 
 const techIcons = [
-  // Frontend
-  { name: "HTML5", icon: "🌐" },
-  { name: "CSS3", icon: "🎨" },
-  { name: "JavaScript (ES6+)", icon: "💛" },
-  { name: "TypeScript", icon: "🔷" },
-  { name: "React.js", icon: "⚛️" },
-  { name: "Next.js", icon: "▲" },
-
-  // Backend
-  { name: "Node.js", icon: "🟢" },
-  { name: "Express.js", icon: "🚂" },
-  { name: "MongoDB", icon: "🍃" },
-  { name: "REST API", icon: "⚡" },
-  { name: "Stripe", icon: "💳" },
-
-  // AI Tools
-  { name: "ChatGPT", icon: "🤖" },
-  { name: "Claude", icon: "🧠" },
-  { name: "Cursor AI", icon: "✨" },
-  { name: "GitHub Copilot", icon: "🚀" },
-
-  // Development Tools
-  { name: "Git", icon: "📦" },
-  { name: "GitHub", icon: "🐙" },
-  { name: "VS Code", icon: "💻" },
-  { name: "Postman", icon: "🚀" },
-
-  // UI Libraries
-  { name: "Tailwind CSS", icon: "🌊" },
-  { name: "HeroUI", icon: "💎" },
-  { name: "DaisyUI", icon: "🌼" },
-  { name: "Framer Motion", icon: "🎭" },
-  { name: "Font Awesome", icon: "🚩" },
-
-  // Authentication
-  { name: "Better Auth", icon: "🛡️" },
-  { name: "Google Authentication", icon: "🔑" },
-
-  // Deployment
-  { name: "Vercel", icon: "▲" },
-  { name: "Render", icon: "☁️" },
+  { name: "HTML5",                icon: "🌐" },
+  { name: "CSS3",                 icon: "🎨" },
+  { name: "JavaScript (ES6+)",    icon: "💛" },
+  { name: "TypeScript",           icon: "🔷" },
+  { name: "React.js",             icon: "⚛️" },
+  { name: "Next.js",              icon: "▲"  },
+  { name: "Node.js",              icon: "🟢" },
+  { name: "Express.js",           icon: "🚂" },
+  { name: "MongoDB",              icon: "🍃" },
+  { name: "REST API",             icon: "⚡" },
+  { name: "Stripe",               icon: "💳" },
+  { name: "ChatGPT",              icon: "🤖" },
+  { name: "Claude",               icon: "🧠" },
+  { name: "Cursor AI",            icon: "✨" },
+  { name: "GitHub Copilot",       icon: "🚀" },
+  { name: "Git",                  icon: "📦" },
+  { name: "GitHub",               icon: "🐙" },
+  { name: "VS Code",              icon: "💻" },
+  { name: "Postman",              icon: "🚀" },
+  { name: "Tailwind CSS",         icon: "🌊" },
+  { name: "HeroUI",               icon: "💎" },
+  { name: "DaisyUI",              icon: "🌼" },
+  { name: "Framer Motion",        icon: "🎭" },
+  { name: "Font Awesome",         icon: "🚩" },
+  { name: "Better Auth",          icon: "🛡️" },
+  { name: "Google Authentication",icon: "🔑" },
+  { name: "Vercel",               icon: "▲"  },
+  { name: "Render",               icon: "☁️" },
 ];
 
-/* Circular SVG ring — radius 38, so circumference ≈ 238.76 */
+/* Circular SVG ring — radius 38 */
 const R = 38;
-const C = 2 * Math.PI * R; // 238.76
+const C = 2 * Math.PI * R;
 
 function RingCard({
   skill,
@@ -80,18 +67,14 @@ function RingCard({
       ([entry]) => {
         if (entry.isIntersecting) {
           timer = setTimeout(() => {
-            const duration = 1200; // ms
+            const duration = 1200;
             const start = performance.now();
             const animate = (now: number) => {
               const elapsed = now - start;
-              const progressRatio = Math.min(elapsed / duration, 1);
-              // Ease-out cubic formula
-              const easeOut = 1 - Math.pow(1 - progressRatio, 3);
-              const currentVal = Math.round(easeOut * skill.pct);
-              setProgress(currentVal);
-              if (progressRatio < 1) {
-                animFrame = requestAnimationFrame(animate);
-              }
+              const ratio = Math.min(elapsed / duration, 1);
+              const easeOut = 1 - Math.pow(1 - ratio, 3);
+              setProgress(Math.round(easeOut * skill.pct));
+              if (ratio < 1) animFrame = requestAnimationFrame(animate);
             };
             animFrame = requestAnimationFrame(animate);
           }, index * 100);
@@ -117,20 +100,14 @@ function RingCard({
   return (
     <div
       ref={ref}
-      className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-transparent border border-white/5 hover:border-white/10 transition-all duration-300 hover:-translate-y-1"
+      className="group flex flex-col items-center gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.12] hover:bg-white/[0.04] transition-all duration-300 hover:-translate-y-1"
     >
       {/* SVG ring */}
       <div className="relative w-[110px] h-[110px]">
-        <svg
-          width="110"
-          height="110"
-          viewBox="0 0 100 100"
-          className="-rotate-90"
-        >
-          {/* Glow filter */}
+        <svg width="110" height="110" viewBox="0 0 100 100" className="-rotate-90">
           <defs>
             <filter id={`glow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -138,18 +115,12 @@ function RingCard({
             </filter>
             <linearGradient id={`grad-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor={skill.dot} stopOpacity="1" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.85" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.7" />
             </linearGradient>
           </defs>
 
           {/* Track */}
-          <circle
-            cx="50" cy="50" r={R}
-            fill="none"
-            stroke="rgba(255,255,255,0.06)"
-            strokeWidth="7"
-            strokeLinecap="round"
-          />
+          <circle cx="50" cy="50" r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="7" strokeLinecap="round" />
 
           {/* Progress arc */}
           <circle
@@ -165,21 +136,19 @@ function RingCard({
           />
         </svg>
 
-        {/* Percentage label — centered over SVG */}
+        {/* Center label */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-black text-white tabular-nums">
-            {progress}%
-          </span>
+          <span className="text-xl font-black text-white tabular-nums">{progress}%</span>
         </div>
       </div>
 
-      {/* Skill label */}
+      {/* Skill name */}
       <div className="flex items-center gap-2">
         <span
-          className="w-2 h-2 rounded-full shrink-0"
-          style={{ background: skill.dot, boxShadow: `0 0 6px ${skill.dot}` }}
+          className="w-2 h-2 rounded-full shrink-0 transition-all duration-300 group-hover:scale-125"
+          style={{ background: skill.dot, boxShadow: `0 0 8px ${skill.dot}80` }}
         />
-        <span className="text-sm font-medium text-zinc-300">{skill.name}</span>
+        <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">{skill.name}</span>
       </div>
     </div>
   );
@@ -187,40 +156,41 @@ function RingCard({
 
 export default function SkillsOverview() {
   return (
-    <section
-      id="skills-overview"
-      className="py-24 px-6 max-w-6xl mx-auto space-y-16"
-    >
-      {/* Header */}
-      <div className="text-center space-y-3">
+    <section id="skills-overview" className="py-24 px-6 max-w-6xl mx-auto space-y-16">
+      {/* Section Header */}
+      <div className="text-center space-y-4">
+        <span className="inline-block text-xs font-mono uppercase tracking-[0.2em] text-blue-400 bg-blue-500/8 px-3 py-1 rounded-full border border-blue-500/15">
+          Proficiency
+        </span>
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
           Technical Expertise
         </h2>
-        <p className="text-zinc-400 text-base max-w-xl mx-auto">
+        <p className="text-zinc-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
           Core technologies I use daily to build fast, responsive, and beautiful web experiences.
         </p>
       </div>
 
-      {/* Ring cards grid */}
+      {/* Ring Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {skills.map((skill, i) => (
           <RingCard key={skill.name} skill={skill} index={i} />
         ))}
       </div>
 
-      {/* Marquee Section */}
-      <div className="relative w-full overflow-hidden py-6 border-y border-white/10 bg-zinc-950/40 backdrop-blur-md rounded-2xl flex">
-        <div className="absolute inset-y-0 left-0 w-24 sm:w-32 bg-gradient-to-r from-[#09090b] via-[#09090b]/80 to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-24 sm:w-32 bg-gradient-to-l from-[#09090b] via-[#09090b]/80 to-transparent z-10 pointer-events-none" />
+      {/* Tech Marquee */}
+      <div className="relative w-full overflow-hidden py-5 border-y border-white/[0.06] bg-zinc-950/50 backdrop-blur-md rounded-2xl">
+        {/* Fade masks */}
+        <div className="absolute inset-y-0 left-0 w-20 sm:w-32 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-20 sm:w-32 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none" />
 
-        <div className="animate-marquee flex gap-6 items-center pr-6 shrink-0">
+        <div className="animate-marquee flex gap-5 items-center pr-5 shrink-0">
           {[...techIcons, ...techIcons].map((tech, i) => (
             <div
               key={i}
-              className="flex items-center gap-3 bg-zinc-900/60 border border-white/10 px-5 py-2.5 rounded-full whitespace-nowrap cursor-pointer hover:scale-105 hover:border-blue-500/50 hover:bg-zinc-800/80 transition-all duration-300 shadow-lg shadow-black/40 group shrink-0"
+              className="flex items-center gap-2.5 bg-zinc-900/60 border border-white/[0.08] px-4 py-2 rounded-full whitespace-nowrap cursor-pointer hover:scale-105 hover:border-blue-500/40 hover:bg-zinc-800/70 transition-all duration-300 shadow-md shadow-black/30 group shrink-0"
             >
-              <span className="text-lg">{tech.icon}</span>
-              <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">
+              <span className="text-base">{tech.icon}</span>
+              <span className="text-xs font-medium text-zinc-400 group-hover:text-white transition-colors">
                 {tech.name}
               </span>
             </div>

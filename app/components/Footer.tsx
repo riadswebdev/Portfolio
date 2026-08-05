@@ -30,7 +30,7 @@ export default function Footer() {
           </Link>
 
           <a
-            href="https://github.com"
+            href="https://github.com/riadswebdev"
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors"
@@ -42,7 +42,7 @@ export default function Footer() {
           </a>
 
           <a
-            href="https://linkedin.com"
+            href="https://www.linkedin.com/in/riad-shekh"
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors"
