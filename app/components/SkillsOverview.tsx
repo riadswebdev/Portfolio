@@ -72,17 +72,44 @@ function RingCard({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    let timer: NodeJS.Timeout;
+    let animFrame: number;
+
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setTimeout(() => setProgress(skill.pct), index * 120);
-          obs.disconnect();
+          timer = setTimeout(() => {
+            const duration = 1200; // ms
+            const start = performance.now();
+            const animate = (now: number) => {
+              const elapsed = now - start;
+              const progressRatio = Math.min(elapsed / duration, 1);
+              // Ease-out cubic formula
+              const easeOut = 1 - Math.pow(1 - progressRatio, 3);
+              const currentVal = Math.round(easeOut * skill.pct);
+              setProgress(currentVal);
+              if (progressRatio < 1) {
+                animFrame = requestAnimationFrame(animate);
+              }
+            };
+            animFrame = requestAnimationFrame(animate);
+          }, index * 100);
+        } else {
+          clearTimeout(timer);
+          cancelAnimationFrame(animFrame);
+          setProgress(0);
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.2 }
     );
+
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+      clearTimeout(timer);
+      cancelAnimationFrame(animFrame);
+    };
   }, [skill.pct, index]);
 
   const dashOffset = C - (C * progress) / 100;

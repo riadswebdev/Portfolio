@@ -197,7 +197,6 @@ function Icon({ id }: { id: string }) {
   );
 }
 
-/* ─── Skill Row ──────────────────────────────────────────── */
 function SkillRow({
   skill,
   accent,
@@ -209,19 +208,51 @@ function SkillRow({
   index: number;
   isLast: boolean;
 }) {
-  const [animated, setAnimated] = useState(false);
+  const [currentPct, setCurrentPct] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    let timer: NodeJS.Timeout;
+    let animFrame: number;
+
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setTimeout(() => setAnimated(true), index * 60); obs.disconnect(); } },
-      { threshold: 0.3 }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          timer = setTimeout(() => {
+            const duration = 1000; // ms
+            const start = performance.now();
+            const animate = (now: number) => {
+              const elapsed = now - start;
+              const progressRatio = Math.min(elapsed / duration, 1);
+              const easeOut = 1 - Math.pow(1 - progressRatio, 3);
+              const val = Math.round(easeOut * skill.pct);
+              setCurrentPct(val);
+
+              if (progressRatio < 1) {
+                animFrame = requestAnimationFrame(animate);
+              }
+            };
+            animFrame = requestAnimationFrame(animate);
+          }, index * 50);
+        } else {
+          clearTimeout(timer);
+          cancelAnimationFrame(animFrame);
+          setCurrentPct(0);
+        }
+      },
+      { threshold: 0.2 }
     );
+
     obs.observe(el);
-    return () => obs.disconnect();
-  }, [index]);
+    return () => {
+      obs.disconnect();
+      clearTimeout(timer);
+      cancelAnimationFrame(animFrame);
+    };
+  }, [skill.pct, index]);
 
   return (
     <div ref={ref} className={`py-3 ${!isLast ? "border-b border-white/5" : ""}`}>
@@ -232,13 +263,13 @@ function SkillRow({
           </div>
           <span className="text-sm font-medium text-zinc-200">{skill.name}</span>
         </div>
-        <span className="text-sm font-bold text-zinc-300 tabular-nums">{skill.pct}%</span>
+        <span className="text-sm font-bold text-zinc-300 tabular-nums">{currentPct}%</span>
       </div>
       {/* Progress bar */}
       <div className="h-[3px] rounded-full bg-white/5 overflow-hidden">
         <div
-          className={`h-full rounded-full bg-gradient-to-r ${accent} transition-all duration-1000 ease-out`}
-          style={{ width: animated ? `${skill.pct}%` : "0%" }}
+          className={`h-full rounded-full bg-gradient-to-r ${accent} transition-all duration-300 ease-out`}
+          style={{ width: `${currentPct}%` }}
         />
       </div>
     </div>

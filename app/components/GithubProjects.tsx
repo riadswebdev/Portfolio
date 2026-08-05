@@ -483,18 +483,7 @@ export default function GithubProjects({
           <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
             GitHub Portfolio Projects
           </h2>
-          {/* <p className="text-zinc-400 text-sm max-w-xl">
-            Dynamically retrieved from{" "}
-            <a
-              href={`https://github.com/${username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 underline hover:text-blue-300"
-            >
-              @{username}
-            </a>
-            . Parsed by Frontend, Backend, Database, Dev Tools, and Key Features.
-          </p> */}
+       
         </div>
 
         {/* Search — hidden on homepage preview */}

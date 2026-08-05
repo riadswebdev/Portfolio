@@ -80,50 +80,93 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
   const setActive = onSectionChange ?? setInternalActive;
 
   return (
-    <header className="fixed top-5 left-0 right-0 z-50 px-4 sm:px-8">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="group-hover:scale-105 transition-transform drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]">
-            <Image
-              src="/logo.png"
-              alt="RS Portfolio Logo"
-              width={150}
-              height={150}
-              className="rounded-xl"
-              priority
-            />
-          </div>
-         
-        </Link>
+    <>
+      {/* Top Header Bar */}
+      <header className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Logo (Top Left) */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="group-hover:scale-105 transition-transform drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]">
+              <Image
+                src="/logo.png"
+                alt="RS Portfolio Logo"
+                width={120}
+                height={120}
+                className="rounded-xl w-28 sm:w-36 h-auto"
+                priority
+              />
+            </div>
+          </Link>
 
-        {/* Floating Pill Navigation */}
-        <nav className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full border border-zinc-800/90 backdrop-blur-sm shadow-2xl shadow-black/80 text-xs sm:text-sm font-medium text-zinc-400">
-          {navLinks.map((link) => (
+          {/* Desktop Floating Pill Navigation */}
+          <nav className="hidden md:flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full border border-zinc-800/90 bg-zinc-950/70 backdrop-blur-md shadow-2xl shadow-black/80 text-xs sm:text-sm font-medium text-zinc-400">
+            {navLinks.map((link) => (
+              <Link
+                key={link.id}
+                href={link.href}
+                onClick={(e) => {
+                  setActive(link.id);
+                  if (link.href === "/" && window.location.pathname === "/") {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
+                  active === link.id
+                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold"
+                    : "hover:text-zinc-200 hover:bg-zinc-800/60"
+                }`}
+              >
+                {link.icon}
+                <span>{link.label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          {/* Hire Me Button (Top Right on both Mobile & Desktop) */}
+          <div className="flex items-center gap-3">
             <Link
-              key={link.id}
-              href={link.href}
-              onClick={() => setActive(link.id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
-                active === link.id
-                  ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold"
-                  : "hover:text-zinc-200 hover:bg-zinc-800/60"
-              }`}
+              href="/contact"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/20 transition-all cursor-pointer shadow-lg shadow-emerald-500/10"
             >
-              {link.icon}
-              <span>{link.label}</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Hire RS
             </Link>
-          ))}
-        </nav>
-
-        {/* Right Action */}
-        <div className="hidden lg:flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Hire RS
           </div>
         </div>
+      </header>
+
+      {/* Mobile Fixed Bottom Navigation Bar (Icons Only) */}
+      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+        <nav className="flex items-center justify-around px-3 py-2.5 rounded-full border bg-zinc-950/70 border-zinc-800/90 backdrop-blur shadow-2xl shadow-black/90">
+          {navLinks.map((link) => {
+            const isActive = active === link.id;
+            return (
+              <Link
+                key={link.id}
+                href={link.href}
+                onClick={(e) => {
+                  setActive(link.id);
+                  if (link.href === "/" && window.location.pathname === "/") {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }}
+                aria-label={link.label}
+                className={`p-2.5 rounded-full transition-all cursor-pointer relative flex items-center justify-center ${
+                  isActive
+                    ? "bg-blue-600/25 text-blue-400 border border-blue-500/40 shadow-lg shadow-blue-500/20 scale-110"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
+                }`}
+              >
+                <div className="w-5 h-5 flex items-center justify-center">
+                  {link.icon}
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-    </header>
+    </>
   );
 }
