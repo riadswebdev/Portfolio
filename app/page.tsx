@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import FrameScrollAnimation from "./components/FrameScrollAnimation";
 import Navbar from "./components/Navbar";
@@ -153,10 +154,11 @@ export default function Home() {
               {/* Developer Profile Header */}
               <div className="flex items-center gap-4">
                 <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-cyan-400/40 shrink-0 shadow-lg shadow-cyan-500/20">
-                  <img
+                  <Image
                     src="/images/profile.jpeg"
                     alt="Md. Riad Shekh"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
                 <div>
