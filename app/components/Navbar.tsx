@@ -75,16 +75,19 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
       <header className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo (Top Left) */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="group-hover:scale-105 transition-transform drop-shadow-[0_0_12px_rgba(34,211,238,0.3)]">
-              <Image
-                src="/logo-rs.svg"
-                alt="Muhammad Riad Shekh Logo"
-                width={180}
-                height={48}
-                className="w-36 sm:w-44 h-auto"
-                priority
-              />
+          <Link href="/" className="flex items-center gap-3 group py-1 select-none">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 via-blue-500/15 to-indigo-500/20 stroke-cyan-500/30 border border-cyan-500/30 shadow-lg shadow-cyan-500/10 group-hover:scale-105 group-hover:border-cyan-400/60 transition-all duration-300 backdrop-blur-md">
+              <span className="text-base font-extrabold italic bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">
+                মরশ
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-base sm:text-lg font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors duration-300 italic font-serif">
+                মোহাম্মদ রিয়াদ শেখ
+              </span>
+              <span className="text-[10px] font-mono text-cyan-400/80 tracking-widest uppercase -mt-0.5">
+                Full Stack Developer
+              </span>
             </div>
           </Link>
 
