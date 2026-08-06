@@ -165,8 +165,8 @@ export default function SkillsOverview() {
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
           Technical Expertise
         </h2>
-        <p className="text-zinc-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-          Core technologies I use daily to build fast, responsive, and beautiful web experiences.
+        <p className="text-zinc-100 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+          Technologies and tools I use to build scalable web applications.
         </p>
       </div>
 

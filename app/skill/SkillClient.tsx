@@ -366,7 +366,7 @@ function StatsBanner() {
           style={{ background: "rgba(4, 6, 12, 0.50)" }}
         >
           <p className={`text-3xl font-black ${s.color} tracking-tight`}>{s.value}</p>
-          <p className="text-[11px] text-zinc-300 font-mono mt-1 tracking-wide">{s.label}</p>
+          <p className="text-[11px] text-zinc-100 font-mono mt-1 tracking-wide">{s.label}</p>
         </div>
       ))}
     </motion.div>

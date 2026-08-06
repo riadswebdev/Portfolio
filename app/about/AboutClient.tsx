@@ -55,7 +55,7 @@ export default function AboutClient() {
       {/* ── Background Video — color graded to match portfolio aesthetic ── */}
       <div
         className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden"
-        style={{ filter: "brightness(0.68) saturate(1.10) contrast(1.05)" }}
+      
       >
         <video
           src="https://res.cloudinary.com/djgg1xzaj/video/upload/v1786008084/clideo_editor_feb586d352f84e049a544030d0661b82_ydzmp6.mp4"
@@ -202,14 +202,14 @@ export default function AboutClient() {
                 {stat.icon}
               </div>
               <p className="text-3xl font-extrabold text-white tracking-tight">{stat.number}</p>
-              <p className="text-xs text-zinc-300 font-medium tracking-wide">{stat.label}</p>
+              <p className="text-xs text-zinc-100 font-medium tracking-wide">{stat.label}</p>
             </motion.div>
           ))}
         </div>
 
 
         {/* Paragraphs Description */}
-        <div className="space-y-5 text-zinc-300 text-xs sm:text-sm leading-relaxed font-light border-t border-zinc-700/30 pt-10">
+        <div className="space-y-5 text-zinc-100 text-xs sm:text-sm leading-relaxed font-light border-t border-zinc-700/30 pt-10">
           <p>
             Hi, I&apos;m <span className="font-bold text-white">Md. Riad Shekh</span>, a passionate <span className="text-cyan-400 font-semibold">Full Stack Web Developer</span> with a strong interest in building modern, responsive, and user-friendly web applications.
           </p>

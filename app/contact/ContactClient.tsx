@@ -219,7 +219,7 @@ export default function ContactClient() {
                       href={social.href}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-zinc-800/60 hover:border-zinc-700 text-xs font-medium text-zinc-300 hover:text-white transition-colors group"
+                      className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-zinc-800/60 hover:border-zinc-700 text-xs font-medium text-zinc-100 hover:text-white transition-colors group"
                     >
                       {social.icon}
                       <span>{social.name}</span>
