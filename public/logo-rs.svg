@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 90" fill="none">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#22d3ee"/>
+      <stop offset="50%"  stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="bgAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#0c4a6e" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#1e1b4b" stop-opacity="0.3"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- ── Badge ──────────────────────────────────── -->
+  <!-- Background -->
+  <rect x="2" y="2" width="86" height="86" rx="20" fill="#04060c"/>
+  <rect x="2" y="2" width="86" height="86" rx="20" fill="url(#bgAccent)"/>
+  <!-- Outer ring -->
+  <rect x="1" y="1" width="88" height="88" rx="21"
+        stroke="url(#brandGrad)" stroke-width="1.4" stroke-opacity="0.45" fill="none"/>
+  <!-- Corner brackets -->
+  <polyline points="1,22 1,1 22,1"
+            stroke="url(#brandGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <polyline points="89,68 89,89 68,89"
+            stroke="url(#brandGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Initials -->
+  <g filter="url(#glow)">
+    <text x="45" y="62"
+          font-family="Inter,Segoe UI,system-ui,sans-serif"
+          font-size="46" font-weight="900" letter-spacing="-3"
+          fill="url(#brandGrad)" text-anchor="middle">MRS</text>
+  </g>
+
+  <!-- ── Word-mark ───────────────────────────────── -->
+  <!-- "MUHAMMAD" small label -->
+  <text x="108" y="29"
+        font-family="Inter,Segoe UI,system-ui,sans-serif"
+        font-size="10" font-weight="500" letter-spacing="4.5"
+        fill="#9ca3af">MUHAMMAD</text>
+
+  <!-- "RIAD SHEKH" primary -->
+  <text x="106" y="56"
+        font-family="Inter,Segoe UI,system-ui,sans-serif"
+        font-size="24" font-weight="800" letter-spacing="2.5"
+        fill="#ffffff">RIAD SHEKH</text>
+
+  <!-- Separator -->
+  <line x1="106" y1="64" x2="495" y2="64"
+        stroke="url(#brandGrad)" stroke-width="1" stroke-opacity="0.45"/>
+
+  <!-- Role -->
+  <text x="107" y="78"
+        font-family="JetBrains Mono,Fira Code,Courier New,monospace"
+        font-size="9" font-weight="400" letter-spacing="2"
+        fill="#22d3ee" fill-opacity="0.85">Full Stack Developer · React · Next.js</text>
+</svg>
