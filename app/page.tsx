@@ -153,9 +153,9 @@ export default function Home() {
 
               {/* Developer Profile Header */}
               <div className="flex items-center gap-4">
-                <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-cyan-400/40 shrink-0 shadow-lg shadow-cyan-500/20">
+                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-cyan-400/40 shrink-0 shadow-lg shadow-cyan-500/20">
                   <Image
-                    src="/images/profile.jpeg"
+                    src="/riad.png"
                     alt="Md. Riad Shekh"
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-500"
