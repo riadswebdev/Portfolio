@@ -466,7 +466,7 @@ export default function GithubProjects({
   const hasMore = maxItems ? filteredRepos.length > maxItems : false;
 
   return (
-    <section id="projects" className="py-24 px-6 max-w-7xl mx-auto border-t border-zinc-900">
+    <section id="projects" className="py-24 px-6 max-w-7xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 28 }}
@@ -500,7 +500,7 @@ export default function GithubProjects({
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-xs cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-100 hover:text-white text-xs cursor-pointer"
                 >
                   ✕
                 </button>
@@ -519,7 +519,7 @@ export default function GithubProjects({
             className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
               selectedCategory === cat.id
                 ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30 scale-105"
-                : "bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/60"
+                : "bg-zinc-900/60 border border-zinc-800 text-zinc-100 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/60"
             }`}
           >
             {cat.label}
@@ -618,7 +618,7 @@ export default function GithubProjects({
       {/* Empty State */}
       {!loading && !error && filteredRepos.length === 0 && (
         <div className="p-12 text-center border border-dashed border-zinc-800 rounded-3xl max-w-lg mx-auto">
-          <p className="text-zinc-400 text-sm">No repositories found matching your filters.</p>
+          <p className="text-zinc-100 text-sm">No repositories found matching your filters.</p>
           <button
             onClick={() => {
               setSearchQuery("");
@@ -689,7 +689,7 @@ export default function GithubProjects({
                       {repo.name}
                     </h3>
 
-                    <p className="text-zinc-400 text-xs leading-relaxed font-light line-clamp-3">
+                    <p className="text-zinc-100 text-xs leading-relaxed font-light line-clamp-3">
                       {repo.description || "No description provided for this GitHub repository."}
                     </p>
                   </div>
