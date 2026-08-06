@@ -35,91 +35,199 @@ export default function Home() {
       <FrameScrollAnimation backgroundMode />
 
       {/* ── Hero Section ─────────────────────────────────────────────────── */}
-      <section className="relative pt-36 pb-24 md:pt-52 md:pb-40 px-6 max-w-7xl mx-auto overflow-hidden">
+      <section className="relative pt-36 pb-24 md:pt-48 md:pb-36 px-6 max-w-7xl mx-auto overflow-hidden">
         {/* Ambient glow orb */}
         <div className="absolute top-1/3 left-1/4 w-[700px] h-[700px] bg-gradient-to-tr from-blue-600/10 via-indigo-600/8 to-purple-600/8 rounded-full blur-3xl pointer-events-none -z-10" />
         <div className="absolute top-1/2 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-cyan-600/8 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
 
-        <motion.div
-          className="max-w-3xl space-y-8"
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-        >
-          {/* Status badge */}
-          <motion.div variants={fadeInUp} className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-blue-500/8 border border-blue-500/20 text-xs font-mono text-blue-400 backdrop-blur-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
-            <span>Available for Opportunities</span>
-            <span className="text-blue-500/50">•</span>
-            <span>Frontend Developer</span>
+        <div className="grid lg:grid-cols-12 gap-12 items-center">
+          {/* Left Column — Text & CTAs */}
+          <motion.div
+            className="lg:col-span-7 space-y-8"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+          >
+            {/* Status badge */}
+            <motion.div variants={fadeInUp} className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-blue-500/8 border border-blue-500/20 text-xs font-mono text-blue-400 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
+              <span>Available for Opportunities</span>
+              <span className="text-blue-500/50">•</span>
+              <span>Full Stack Developer</span>
+            </motion.div>
+
+            {/* Headline */}
+            <motion.div variants={fadeInUp} className="space-y-3">
+              <p className="text-white text-sm sm:text-base font-mono tracking-wider uppercase">
+                Hi, I&apos;m
+              </p>
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.08]">
+                Md. Riad{" "}
+                <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                  Shekh
+                </span>
+              </h1>
+            </motion.div>
+
+            {/* Sub-headline */}
+            <motion.p variants={fadeInUp} className="text-base sm:text-lg text-white font-light leading-relaxed max-w-2xl">
+              Building modern, responsive web applications with{" "}
+              <span className="text-zinc-200 font-medium">React.js, Next.js &amp; TypeScript</span>.
+              Full-stack experience with{" "}
+              <span className="text-zinc-200 font-medium">Node.js, MongoDB &amp; REST APIs</span>.
+              Experienced with AI-driven development workflows.
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div variants={fadeInUp} className="flex flex-wrap gap-3 items-center pt-2">
+              <a
+                href="/contact"
+                className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2 text-sm"
+              >
+                Get In Touch
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </a>
+              <a
+                href="#projects"
+                className="px-7 py-3.5 rounded-2xl bg-zinc-900/70 border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white font-medium transition-all duration-300 hover:-translate-y-0.5 text-sm backdrop-blur-sm"
+              >
+                Explore Projects
+              </a>
+              <a
+                href="/Md%20Riad%20Shekh%20Final%20Resume.pdf"
+                target="_blank"
+                download="Md Riad Shekh Final Resume.pdf"
+                rel="noreferrer"
+                className="px-7 py-3.5 rounded-2xl bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white font-medium transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2 group text-sm backdrop-blur-sm"
+              >
+                <svg className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download Resume
+              </a>
+            </motion.div>
+
+            {/* Quick Stats */}
+            <motion.div variants={fadeInUp} className="pt-8 grid grid-cols-3 gap-6 border-t border-zinc-800/50 max-w-xl">
+              {[
+                { label: "Core Stack",       value: "React & Next.js" },
+                { label: "Architecture",     value: "Full-Stack" },
+                { label: "AI Tools",         value: "Cursor & GPT" },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <p className="text-xl sm:text-2xl font-bold text-white tracking-tight">{stat.value}</p>
+                  <p className="text-xs text-zinc-500 font-mono tracking-wide mt-1">{stat.label}</p>
+                </div>
+              ))}
+            </motion.div>
           </motion.div>
 
-          {/* Headline */}
-          <motion.div variants={fadeInUp} className="space-y-3">
-            <p className="text-white text-sm sm:text-base font-mono tracking-wider uppercase">
-              Hi, I&apos;m
-            </p>
-            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight text-white leading-[1.05]">
-              Md. Riad{" "}
-              <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                Shekh
-              </span>
-            </h1>
-          </motion.div>
+          {/* Right Column — Engaging Interactive Visual Element */}
+          <motion.div
+            className="lg:col-span-5 relative flex justify-center"
+            initial={{ opacity: 0, scale: 0.9, x: 30 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+          >
+            {/* Outer Glow Ring */}
+            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-cyan-500/20 via-blue-600/30 to-indigo-500/20 blur-xl opacity-70 animate-pulse pointer-events-none" />
 
-          {/* Sub-headline */}
-          <motion.p variants={fadeInUp} className="text-base sm:text-lg text-white font-light leading-relaxed max-w-2xl">
-            Building modern, responsive web applications with{" "}
-            <span className="text-zinc-200 font-medium">React.js, Next.js &amp; TypeScript</span>.
-            Full-stack experience with{" "}
-            <span className="text-zinc-200 font-medium">Node.js, MongoDB &amp; REST APIs</span>.
-            Experienced with AI-driven development workflows.
-          </motion.p>
-
-          {/* CTA Buttons */}
-          <motion.div variants={fadeInUp} className="flex flex-wrap gap-3 items-center pt-2">
-            <a
-              href="/contact"
-              className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2 text-sm"
+            <div
+              className="relative w-full max-w-md p-6 sm:p-7 rounded-3xl border border-zinc-700/60 backdrop-blur-2xl shadow-2xl space-y-6 overflow-hidden group"
+              style={{ background: "rgba(6, 10, 18, 0.65)" }}
             >
-              Get In Touch
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </a>
-            <a
-              href="#projects"
-              className="px-7 py-3.5 rounded-2xl bg-zinc-900/70 border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white font-medium transition-all duration-300 hover:-translate-y-0.5 text-sm backdrop-blur-sm"
-            >
-              Explore Projects
-            </a>
-            <a
-              href="/Md%20Riad%20Shekh%20Final%20Resume.pdf"
-              target="_blank"
-              download="Md Riad Shekh Final Resume.pdf"
-              rel="noreferrer"
-              className="px-7 py-3.5 rounded-2xl bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white font-medium transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2 group text-sm backdrop-blur-sm"
-            >
-              <svg className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download Resume
-            </a>
-          </motion.div>
-
-          {/* Quick Stats */}
-          <motion.div variants={fadeInUp} className="pt-10 grid grid-cols-3 gap-8 border-t border-zinc-800/50 max-w-xl">
-            {[
-              { label: "Core Stack",       value: "React & Next.js" },
-              { label: "Architecture",     value: "Full-Stack" },
-              { label: "AI Tools",         value: "Cursor & GPT" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <p className="text-xl sm:text-2xl font-bold text-white tracking-tight">{stat.value}</p>
-                <p className="text-xs text-zinc-500 font-mono tracking-wide mt-1">{stat.label}</p>
+              {/* Top Bar Tech Pill */}
+              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                  <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                </div>
+                <span className="text-[11px] font-mono text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+                  Full Stack Engineer
+                </span>
               </div>
-            ))}
+
+              {/* Developer Profile Header */}
+              <div className="flex items-center gap-4">
+                <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-cyan-400/40 shrink-0 shadow-lg shadow-cyan-500/20">
+                  <img
+                    src="/images/profile.jpeg"
+                    alt="Md. Riad Shekh"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white tracking-tight">Md. Riad Shekh</h3>
+                  <p className="text-xs text-zinc-400 font-mono">Web Application Architect</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-[11px] text-emerald-400 font-medium">Active Codebase Session</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Code Feature Snippet Box */}
+              <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800 font-mono text-xs space-y-2 text-zinc-300">
+                <div className="flex justify-between text-zinc-500 text-[10px]">
+                  <span>Developer.ts</span>
+                  <span className="text-cyan-400">99.9% Clean Code</span>
+                </div>
+                <p><span className="text-purple-400">const</span> <span className="text-blue-400">developer</span> = &#123;</p>
+                <p className="pl-4"><span className="text-zinc-400">name:</span> <span className="text-emerald-300">&quot;Md. Riad Shekh&quot;</span>,</p>
+                <p className="pl-4"><span className="text-zinc-400">specialty:</span> <span className="text-emerald-300">&quot;Full Stack & UI/UX&quot;</span>,</p>
+                <p className="pl-4"><span className="text-zinc-400">technologies:</span> [<span className="text-cyan-300">&quot;Next.js&quot;</span>, <span className="text-cyan-300">&quot;React&quot;</span>, <span className="text-cyan-300">&quot;Node&quot;</span>],</p>
+                <p className="pl-4"><span className="text-zinc-400">status:</span> <span className="text-yellow-300">&quot;Ready for Hire&quot;</span></p>
+                <p>&#125;;</p>
+              </div>
+
+              {/* Interactive Quick Badges */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center gap-3">
+                  <span className="text-lg">🚀</span>
+                  <div>
+                    <p className="text-xs font-bold text-white">Fast Delivery</p>
+                    <p className="text-[10px] text-zinc-400">Optimized Performance</p>
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center gap-3">
+                  <span className="text-lg">🛡️</span>
+                  <div>
+                    <p className="text-xs font-bold text-white">Clean Architecture</p>
+                    <p className="text-[10px] text-zinc-400">Maintainable Code</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── Key Milestones & Stats Highlights Section ────────────────────── */}
+      <section className="py-16 px-6 max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 sm:p-8 rounded-3xl border border-zinc-800/80 bg-zinc-950/50 backdrop-blur-md"
+        >
+          {[
+            { metric: "100%", label: "Responsive Design", desc: "Mobile to 4K Displays" },
+            { metric: "22+", label: "Tech Stack Tools", desc: "React, Next.js, Node, MongoDB" },
+            { metric: "Full Stack", label: "End-to-End Solutions", desc: "Frontend UI to REST APIs" },
+            { metric: "AI-Powered", label: "Modern Workflow", desc: "Rapid & Reliable Building" },
+          ].map((item, index) => (
+            <div key={index} className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 text-center space-y-1 hover:border-cyan-500/30 transition-colors">
+              <p className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                {item.metric}
+              </p>
+              <p className="text-xs sm:text-sm font-bold text-white">{item.label}</p>
+              <p className="text-[11px] text-zinc-400">{item.desc}</p>
+            </div>
+          ))}
         </motion.div>
       </section>
 
