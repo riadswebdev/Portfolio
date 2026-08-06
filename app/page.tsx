@@ -36,7 +36,7 @@ export default function Home() {
       <FrameScrollAnimation backgroundMode />
 
       {/* ── Hero Section ─────────────────────────────────────────────────── */}
-      <section className="relative pt-36 pb-24 md:pt-48 md:pb-36 px-6 max-w-7xl mx-auto overflow-hidden">
+      <section className="relative pt-32 pb-16 md:pt-40 md:pb-24 px-6 max-w-7xl mx-auto overflow-hidden">
         {/* Ambient glow orb */}
         <div className="absolute top-1/3 left-1/4 w-[700px] h-[700px] bg-gradient-to-tr from-blue-600/10 via-indigo-600/8 to-purple-600/8 rounded-full blur-3xl pointer-events-none -z-10" />
         <div className="absolute top-1/2 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-cyan-600/8 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
@@ -111,7 +111,7 @@ export default function Home() {
             </motion.div>
 
             {/* Quick Stats */}
-            <motion.div variants={fadeInUp} className="pt-8 grid grid-cols-3 gap-6 border-t border-zinc-800/50 max-w-xl">
+            <motion.div variants={fadeInUp} className="pt-6 grid grid-cols-3 gap-6 max-w-xl">
               {[
                 { label: "Core Stack",       value: "React & Next.js" },
                 { label: "Architecture",     value: "Full-Stack" },
@@ -208,13 +208,13 @@ export default function Home() {
       </section>
 
       {/* ── Key Milestones & Stats Highlights Section ────────────────────── */}
-      <section className="py-16 px-6 max-w-7xl mx-auto">
+      <section className="py-8 px-6 max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 sm:p-8 rounded-3xl border border-zinc-800/80 bg-zinc-950/50 backdrop-blur-md"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 sm:p-8 rounded-3xl bg-zinc-950/20 backdrop-blur-md"
         >
           {[
             { metric: "100%", label: "Responsive Design", desc: "Mobile to 4K Displays" },
@@ -222,7 +222,7 @@ export default function Home() {
             { metric: "Full Stack", label: "End-to-End Solutions", desc: "Frontend UI to REST APIs" },
             { metric: "AI-Powered", label: "Modern Workflow", desc: "Rapid & Reliable Building" },
           ].map((item, index) => (
-            <div key={index} className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 text-center space-y-1 hover:border-cyan-500/30 transition-colors">
+            <div key={index} className="p-4 rounded-2xl bg-zinc-900/10 border border-zinc-800/60 text-center space-y-1 hover:border-cyan-500/30 transition-colors">
               <p className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                 {item.metric}
               </p>
@@ -234,13 +234,13 @@ export default function Home() {
       </section>
 
       {/* ── Capabilities Section ──────────────────────────────────────────── */}
-      <section id="skills" className="py-28 px-6 max-w-7xl mx-auto border-t border-zinc-900/60">
+      <section id="skills" className="py-14 sm:py-16 px-6 max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
-          className="text-center max-w-2xl mx-auto space-y-4 mb-16"
+          className="text-center max-w-2xl mx-auto space-y-4 mb-12"
         >
           <span className="inline-block text-xs font-mono uppercase tracking-[0.2em] text-blue-400 bg-blue-500/8 px-3 py-1 rounded-full border border-blue-500/15">
             Capabilities
@@ -309,20 +309,20 @@ export default function Home() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-16"
+          className="mt-12"
         >
           <SkillsOverview />
         </motion.div>
       </section>
 
       {/* ── Featured Projects Section ────────────────────────────────────────── */}
-      <section id="projects" className="py-28 px-6 max-w-7xl mx-auto border-t border-zinc-900/60">
+      <section id="projects" className="py-14 sm:py-16 px-6 max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
-          className="text-center max-w-2xl mx-auto space-y-4 mb-16"
+          className="text-center max-w-2xl mx-auto space-y-4 mb-12"
         >
           <span className="inline-block text-xs font-mono uppercase tracking-[0.2em] text-blue-400 bg-blue-500/8 px-3 py-1 rounded-full border border-blue-500/15">
             Portfolio
@@ -339,7 +339,7 @@ export default function Home() {
       </section>
 
       {/* ── Workflow / Engineering Approach ──────────────────────────────── */}
-      <section className="py-28 px-6 max-w-7xl mx-auto border-t border-zinc-900/60">
+      <section className="py-14 sm:py-16 px-6 max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -407,7 +407,7 @@ export default function Home() {
       </section>
 
       {/* ── Contact CTA Section ───────────────────────────────────────────── */}
-      <section id="contact" className="py-28 px-6 max-w-7xl mx-auto border-t border-zinc-900/60">
+      <section id="contact" className="py-14 sm:py-16 px-6 max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
