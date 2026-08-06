@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, ReactNode } from "react";
+import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -351,7 +352,13 @@ function StatsBanner() {
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+    >
       {stats.map((s) => (
         <div
           key={s.label}
@@ -362,7 +369,7 @@ function StatsBanner() {
           <p className="text-[11px] text-zinc-300 font-mono mt-1 tracking-wide">{s.label}</p>
         </div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -390,7 +397,12 @@ export default function SkillClient() {
 
       <main className="relative z-10 pt-32 pb-28 px-6 max-w-5xl mx-auto w-full space-y-14">
         {/* ── Hero Header ── */}
-        <div className="text-center max-w-2xl mx-auto space-y-5">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-2xl mx-auto space-y-5"
+        >
           <span className="inline-block text-[10px] font-bold tracking-[0.25em] uppercase text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3.5 py-1.5 rounded-full">
             Technical Proficiency
           </span>
@@ -403,15 +415,23 @@ export default function SkillClient() {
           <p className="text-zinc-200 text-sm sm:text-base font-light leading-relaxed max-w-xl mx-auto">
             Technologies and development tools derived from my active projects and full-stack engineering experience.
           </p>
-        </div>
+        </motion.div>
 
         {/* ── Stats Banner ── */}
         <StatsBanner />
 
         {/* ── 2 × 2 Skill Grid ── */}
         <div className="grid md:grid-cols-2 gap-5">
-          {categories.map((cat) => (
-            <CategoryCard key={cat.id} cat={cat} />
+          {categories.map((cat, i) => (
+            <motion.div
+              key={cat.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.1 }}
+            >
+              <CategoryCard cat={cat} />
+            </motion.div>
           ))}
         </div>
       </main>
@@ -420,3 +440,4 @@ export default function SkillClient() {
     </div>
   );
 }
+

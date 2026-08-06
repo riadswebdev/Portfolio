@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -149,20 +150,30 @@ export default function ContactClient() {
 
       <main className="pt-32 pb-24 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-12">
         {/* Top Header */}
-        <div className="text-center max-w-xl mx-auto space-y-2">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-xl mx-auto space-y-2"
+        >
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-cyan-400">
             Get In Touch
           </h1>
           <p className="text-zinc-400 text-sm font-light">
             Have a project in mind? Let&apos;s work together.
           </p>
-        </div>
+        </motion.div>
 
         {/* 2 Column Contact Layout */}
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           
           {/* Left Column: Contact Information */}
-          <div className="lg:col-span-5 space-y-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="lg:col-span-5 space-y-6"
+          >
             <div className="p-6 sm:p-8 rounded-3xl border border-zinc-800/80 space-y-6 shadow-2xl">
               <div>
                 <h2 className="text-xl font-bold text-white tracking-tight">
@@ -217,10 +228,15 @@ export default function ContactClient() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right Column: Send a Message Form */}
-          <div className="lg:col-span-7">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="lg:col-span-7"
+          >
             <div className="p-6 sm:p-10 rounded-3xl border border-zinc-800/80 space-y-6 shadow-2xl">
               <div>
                 <h2 className="text-2xl font-bold text-white tracking-tight">
@@ -329,7 +345,7 @@ export default function ContactClient() {
                 </button>
               </form>
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </main>

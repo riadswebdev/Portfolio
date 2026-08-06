@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -74,7 +75,12 @@ export default function AboutClient() {
       <main className="relative z-10 pt-32 pb-20 px-4 sm:px-6 max-w-6xl mx-auto space-y-16 flex-1">
 
         {/* Top Header */}
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center space-y-3 max-w-2xl mx-auto"
+        >
           <div className="inline-block px-4 py-1 rounded-full border border-zinc-700/60 text-xs font-semibold text-zinc-300 tracking-wide backdrop-blur-md" style={{ background: "rgba(4, 6, 12, 0.55)" }}>
             About Me
           </div>
@@ -84,13 +90,18 @@ export default function AboutClient() {
           <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed">
             A passionate developer dedicated to turning complex ideas into elegant, high-performance digital experiences.
           </p>
-        </div>
+        </motion.div>
 
         {/* Bio & Image Grid Section */}
         <div className="grid lg:grid-cols-12 gap-10 items-start">
 
           {/* Left Frame Image */}
-          <div className="lg:col-span-5 flex justify-center">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="lg:col-span-5 flex justify-center"
+          >
             <div className="relative group w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden border border-zinc-700/60 p-2 shadow-2xl shadow-cyan-950/30 backdrop-blur-sm" style={{ background: "rgba(4, 6, 12, 0.45)" }}>
               <div className="relative w-full h-full rounded-xl overflow-hidden">
                 <Image
@@ -102,10 +113,15 @@ export default function AboutClient() {
                 />
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right Bio & Skills Pills */}
-          <div className="lg:col-span-7 space-y-6">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="lg:col-span-7 space-y-6"
+          >
             <div className="space-y-2">
               <span className="text-xs font-medium text-cyan-400 tracking-wider">Professional Bio</span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -122,8 +138,11 @@ export default function AboutClient() {
             {/* Grid of Highlight Pills */}
             <div className="grid sm:grid-cols-2 gap-3 pt-2">
               {highlights.map((item, idx) => (
-                <div
+                <motion.div
                   key={idx}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 + idx * 0.05 }}
                   className="flex items-center gap-3 px-3.5 py-2.5 rounded-full border border-zinc-700/50 hover:border-cyan-500/40 transition-colors group backdrop-blur-sm"
                   style={{ background: "rgba(4, 6, 12, 0.48)" }}
                 >
@@ -135,7 +154,7 @@ export default function AboutClient() {
                   <span className="text-xs text-zinc-300 group-hover:text-white font-medium truncate">
                     {item.text}
                   </span>
-                </div>
+                </motion.div>
               ))}
             </div>
 
@@ -164,14 +183,18 @@ export default function AboutClient() {
                 <span>Download Resume</span>
               </a>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* 3 Stats Boxes */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
           {stats.map((stat, idx) => (
-            <div
+            <motion.div
               key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: idx * 0.1 }}
               className="p-6 rounded-2xl border border-zinc-700/60 hover:border-zinc-600/80 transition-colors text-center space-y-2 flex flex-col items-center justify-center shadow-lg backdrop-blur-md"
               style={{ background: "rgba(4, 6, 12, 0.52)" }}
             >
@@ -180,9 +203,10 @@ export default function AboutClient() {
               </div>
               <p className="text-3xl font-extrabold text-white tracking-tight">{stat.number}</p>
               <p className="text-xs text-zinc-300 font-medium tracking-wide">{stat.label}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
+
 
         {/* Paragraphs Description */}
         <div className="space-y-5 text-zinc-300 text-xs sm:text-sm leading-relaxed font-light border-t border-zinc-700/30 pt-10">
