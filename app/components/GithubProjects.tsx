@@ -466,7 +466,7 @@ export default function GithubProjects({
   const hasMore = maxItems ? filteredRepos.length > maxItems : false;
 
   return (
-    <section id="projects" className="py-24 px-6 max-w-7xl mx-auto">
+    <section id="projects" className="pb-10 px-6 max-w-7xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 28 }}

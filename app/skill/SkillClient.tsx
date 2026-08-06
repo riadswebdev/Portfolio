@@ -208,7 +208,7 @@ function Icon({ id }: { id: string }) {
     ),
   };
   return icons[id] ?? (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={`${cls} text-zinc-400`} strokeWidth={2}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={`${cls} text-zinc-100`} strokeWidth={2}>
       <circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/>
     </svg>
   );
@@ -279,7 +279,7 @@ function SkillRow({
             {skill.name}
           </span>
         </div>
-        <span className="text-xs font-bold text-zinc-400 tabular-nums group-hover/row:text-zinc-200 transition-colors">
+        <span className="text-xs font-bold text-zinc-100 tabular-nums group-hover/row:text-zinc-200 transition-colors">
           {currentPct}%
         </span>
       </div>

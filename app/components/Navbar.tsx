@@ -77,7 +77,7 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
           {/* Logo (Top Left) */}
           <Link href="/" className="flex items-center group py-1 select-none">
             <span className="text-sm sm:text-base md:text-lg font-black tracking-[0.18em] uppercase italic transition-all duration-300 group-hover:scale-[1.02]">
-              <span className="text-zinc-400 font-extralight mr-1.5 not-italic tracking-[0.2em] text-xs sm:text-sm">MUHAMMAD</span>
+              <span className="text-zinc-100 font-extralight mr-1.5 not-italic tracking-[0.2em] text-xs sm:text-sm">MUHAMMAD</span>
               <span className="bg-gradient-to-r from-white via-cyan-200 to-blue-400 bg-clip-text text-transparent group-hover:from-cyan-300 group-hover:via-blue-400 group-hover:to-indigo-300">
                 RIAD SHEKH
               </span>
@@ -85,7 +85,7 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
           </Link>
 
           {/* Desktop Floating Pill Navigation */}
-          <nav className="hidden md:flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full border border-zinc-800/90 bg-zinc-950/70 backdrop-blur-md shadow-2xl shadow-black/80 text-xs sm:text-sm font-medium text-zinc-400">
+          <nav className="hidden md:flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full border border-zinc-800/90 bg-zinc-950/70 backdrop-blur-md shadow-2xl shadow-black/80 text-xs sm:text-sm font-medium text-zinc-100">
             {navLinks.map((link) => (
               <Link
                 key={link.id}
@@ -142,7 +142,7 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
                 className={`p-2.5 rounded-full transition-all cursor-pointer relative flex items-center justify-center ${
                   isActive
                     ? "bg-blue-600/25 text-blue-400 border border-blue-500/40 shadow-lg shadow-blue-500/20 scale-110"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
+                    : "text-zinc-100 hover:text-zinc-200 hover:bg-zinc-800/50"
                 }`}
               >
                 <div className="w-5 h-5 flex items-center justify-center">

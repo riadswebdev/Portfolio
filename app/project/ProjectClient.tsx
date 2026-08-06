@@ -7,7 +7,7 @@ import FrameScrollAnimation from "../components/FrameScrollAnimation";
 
 export default function ProjectClient() {
   return (
-    <div className="min-h-screen text-zinc-100 font-sans selection:bg-blue-500/30 selection:text-blue-400 flex flex-col justify-between">
+    <div className="min-h-screen text-zinc-100 pt-16 font-sans selection:bg-blue-500/30 selection:text-blue-400 flex flex-col justify-between">
       {/* Scroll-driven frame animation — fixed full-screen canvas background */}
       <FrameScrollAnimation
         backgroundMode

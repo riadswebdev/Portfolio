@@ -234,7 +234,7 @@ export default function Home() {
       </section>
 
       {/* ── Capabilities Section ──────────────────────────────────────────── */}
-      <section id="skills" className="py-14 sm:py-16 px-6 max-w-7xl mx-auto">
+      <section id="skills" className="px-6 max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -316,7 +316,7 @@ export default function Home() {
       </section>
 
       {/* ── Featured Projects Section ────────────────────────────────────────── */}
-      <section id="projects" className="py-14 sm:py-16 px-6 max-w-7xl mx-auto">
+      <section id="projects" className="px-6 max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

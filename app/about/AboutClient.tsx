@@ -209,7 +209,7 @@ export default function AboutClient() {
 
 
         {/* Paragraphs Description */}
-        <div className="space-y-5 text-zinc-100 text-xs sm:text-sm leading-relaxed font-light border-t border-zinc-700/30 pt-10">
+        <div className="space-y-5 text-white text-xs sm:text-sm leading-relaxed font-light border-t border-zinc-700/30 pt-10">
           <p>
             Hi, I&apos;m <span className="font-bold text-white">Md. Riad Shekh</span>, a passionate <span className="text-cyan-400 font-semibold">Full Stack Web Developer</span> with a strong interest in building modern, responsive, and user-friendly web applications.
           </p>

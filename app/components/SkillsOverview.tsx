@@ -190,7 +190,7 @@ export default function SkillsOverview() {
               className="flex items-center gap-2.5 bg-zinc-900/60 border border-white/[0.08] px-4 py-2 rounded-full whitespace-nowrap cursor-pointer hover:scale-105 hover:border-blue-500/40 hover:bg-zinc-800/70 transition-all duration-300 shadow-md shadow-black/30 group shrink-0"
             >
               <span className="text-base">{tech.icon}</span>
-              <span className="text-xs font-medium text-zinc-400 group-hover:text-white transition-colors">
+              <span className="text-xs font-medium text-zinc-100 group-hover:text-white transition-colors">
                 {tech.name}
               </span>
             </div>
