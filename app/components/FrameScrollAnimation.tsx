@@ -164,7 +164,7 @@ export default function FrameScrollAnimation({
   // Normal scroll-scrub mode
   return (
     <div ref={containerRef} className={`relative ${containerHeight} ${className}`}>
-      <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center bg-black">
+      <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
         <canvas ref={canvasRef} className="block w-full h-full object-cover" />
 
         {/* Overlay Content */}

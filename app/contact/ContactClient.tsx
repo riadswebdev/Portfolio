@@ -132,15 +132,17 @@ export default function ContactClient() {
 
   return (
     <div className="relative min-h-screen font-sans selection:bg-cyan-500/30 selection:text-cyan-400 flex flex-col justify-between overflow-hidden">
-      {/* Background Video from Cloudinary */}
+      {/* Background Video */}
       <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden">
-        <iframe
-          src="https://player.cloudinary.com/embed/?cloud_name=djgg1xzaj&public_id=Use_Image_as_the_primary_ide_3__processed_cw6jxk&autoplay=true&loop=true&muted=true&controls=false"
-          className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover border-0"
-          allow="autoplay; fullscreen"
+        <video
+          src="https://res.cloudinary.com/djgg1xzaj/video/upload/Use_Image_as_the_primary_ide_3__processed_cw6jxk.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          disablePictureInPicture
+          className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover"
         />
-        {/* Dark Overlay for contrast and readability */}
-        <div className="absolute inset-0 backdrop-blur-[2px]" />
       </div>
 
       <Navbar activeSection="contact" />

@@ -225,14 +225,17 @@ export default function Home() {
       {/* ── Contact CTA Section ───────────────────────────────────────────── */}
       <section id="contact" className="py-28 px-6 max-w-7xl mx-auto border-t border-zinc-900/60">
         <div className="relative rounded-3xl border border-zinc-800/80 p-10 sm:p-20 overflow-hidden shadow-2xl">
-          {/* Background Video from Cloudinary (Muted) */}
+          {/* Background Video */}
           <div className="absolute inset-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
-            <iframe
-              src="https://player.cloudinary.com/embed/?cloud_name=djgg1xzaj&public_id=Use_Image_as_the_primary_ide_3__processed_cw6jxk&autoplay=true&loop=true&muted=true&controls=false"
-              className="absolute top-1/2 left-1/2 w-[100%] h-[100%] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover border-0 scale-125"
-              allow="autoplay; fullscreen"
+            <video
+              src="https://res.cloudinary.com/djgg1xzaj/video/upload/Use_Image_as_the_primary_ide_3__processed_cw6jxk.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              disablePictureInPicture
+              className="absolute top-1/2 left-1/2 w-full h-full min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover scale-125"
             />
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-[1px]" />
           </div>
 
           {/* Decorative gradient border glow */}

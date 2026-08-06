@@ -13,11 +13,11 @@ const categories = [
     accent: "from-cyan-400 to-blue-500",
     accentText: "text-cyan-400",
     accentBg: "bg-cyan-500/10",
-    border: "border-cyan-500/15 hover:border-cyan-500/40",
-    glow: "rgba(34,211,238,0.08)",
-    glowHover: "rgba(34,211,238,0.18)",
-    headerGrad: "from-cyan-500/10 via-blue-500/5 to-transparent",
-    badgeColor: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
+    border: "border-cyan-500/20 hover:border-cyan-500/50",
+    glow: "rgba(34,211,238,0.12)",
+    glowHover: "rgba(34,211,238,0.28)",
+    headerGrad: "from-cyan-500/15 via-blue-500/8 to-transparent",
+    badgeColor: "bg-cyan-500/20 text-cyan-300 border-cyan-500/35",
     skills: [
       { name: "React.js",          pct: 92, icon: "react" },
       { name: "Next.js",           pct: 90, icon: "next"  },
@@ -34,11 +34,11 @@ const categories = [
     accent: "from-violet-400 to-purple-600",
     accentText: "text-violet-400",
     accentBg: "bg-violet-500/10",
-    border: "border-violet-500/15 hover:border-violet-500/40",
-    glow: "rgba(167,139,250,0.08)",
-    glowHover: "rgba(167,139,250,0.18)",
-    headerGrad: "from-violet-500/10 via-purple-500/5 to-transparent",
-    badgeColor: "bg-violet-500/15 text-violet-400 border-violet-500/25",
+    border: "border-violet-500/20 hover:border-violet-500/50",
+    glow: "rgba(167,139,250,0.12)",
+    glowHover: "rgba(167,139,250,0.28)",
+    headerGrad: "from-violet-500/15 via-purple-500/8 to-transparent",
+    badgeColor: "bg-violet-500/20 text-violet-300 border-violet-500/35",
     skills: [
       { name: "Node.js",                  pct: 88, icon: "node"    },
       { name: "Express.js",               pct: 88, icon: "express" },
@@ -55,11 +55,11 @@ const categories = [
     accent: "from-pink-400 to-rose-500",
     accentText: "text-pink-400",
     accentBg: "bg-pink-500/10",
-    border: "border-pink-500/15 hover:border-pink-500/40",
-    glow: "rgba(244,114,182,0.08)",
-    glowHover: "rgba(244,114,182,0.18)",
-    headerGrad: "from-pink-500/10 via-rose-500/5 to-transparent",
-    badgeColor: "bg-pink-500/15 text-pink-400 border-pink-500/25",
+    border: "border-pink-500/20 hover:border-pink-500/50",
+    glow: "rgba(244,114,182,0.12)",
+    glowHover: "rgba(244,114,182,0.28)",
+    headerGrad: "from-pink-500/15 via-rose-500/8 to-transparent",
+    badgeColor: "bg-pink-500/20 text-pink-300 border-pink-500/35",
     skills: [
       { name: "Tailwind CSS",   pct: 96, icon: "tailwind"   },
       { name: "HeroUI",         pct: 90, icon: "heroui"     },
@@ -75,11 +75,11 @@ const categories = [
     accent: "from-emerald-400 to-teal-500",
     accentText: "text-emerald-400",
     accentBg: "bg-emerald-500/10",
-    border: "border-emerald-500/15 hover:border-emerald-500/40",
-    glow: "rgba(52,211,153,0.08)",
-    glowHover: "rgba(52,211,153,0.18)",
-    headerGrad: "from-emerald-500/10 via-teal-500/5 to-transparent",
-    badgeColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+    border: "border-emerald-500/20 hover:border-emerald-500/50",
+    glow: "rgba(52,211,153,0.12)",
+    glowHover: "rgba(52,211,153,0.28)",
+    headerGrad: "from-emerald-500/15 via-teal-500/8 to-transparent",
+    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/35",
     skills: [
       { name: "ChatGPT / Claude",           pct: 95, icon: "ai"     },
       { name: "Cursor AI / GitHub Copilot", pct: 92, icon: "cursor" },
@@ -301,13 +301,13 @@ function SkillRow({
 function CategoryCard({ cat }: { cat: typeof categories[0] }) {
   return (
     <div
-      className={`group relative rounded-2xl border ${cat.border} backdrop-blur-sm overflow-hidden flex flex-col transition-all duration-400 hover:-translate-y-1 hover:shadow-2xl`}
+      className={`group relative rounded-2xl border ${cat.border} backdrop-blur-md overflow-hidden flex flex-col transition-all duration-400 hover:-translate-y-1 hover:shadow-2xl`}
       style={{
-     
+        background: "rgba(4, 6, 12, 0.52)",
         boxShadow: `0 0 30px ${cat.glow}`,
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = `0 0 50px ${cat.glowHover}, 0 20px 60px rgba(0,0,0,0.4)`;
+        (e.currentTarget as HTMLElement).style.boxShadow = `0 0 55px ${cat.glowHover}, 0 24px 64px rgba(0,0,0,0.5)`;
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.boxShadow = `0 0 30px ${cat.glow}`;
@@ -318,7 +318,7 @@ function CategoryCard({ cat }: { cat: typeof categories[0] }) {
         <span className={`inline-block text-[10px] font-bold tracking-[0.22em] uppercase px-2.5 py-1 rounded-full border ${cat.badgeColor} mb-3`}>
           {cat.label}
         </span>
-        <p className="text-xs text-zinc-400 font-light leading-relaxed">{cat.desc}</p>
+        <p className="text-xs text-zinc-300 font-light leading-relaxed">{cat.desc}</p>
       </div>
 
       {/* Skill rows */}
@@ -336,7 +336,7 @@ function CategoryCard({ cat }: { cat: typeof categories[0] }) {
 
       {/* Subtle corner glow on hover */}
       <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{ background: cat.glow.replace("0.08", "0.25") }} />
+        style={{ background: cat.glow.replace("0.12", "0.30") }} />
     </div>
   );
 }
@@ -344,10 +344,10 @@ function CategoryCard({ cat }: { cat: typeof categories[0] }) {
 /* ─── Summary Stats Bar ──────────────────────────────────── */
 function StatsBanner() {
   const stats = [
-    { label: "Technologies",  value: "22+", color: "text-cyan-500"    },
-    { label: "Frontend Stack",value: "6",   color: "text-violet-500"  },
-    { label: "Backend Stack", value: "6",   color: "text-pink-500"    },
-    { label: "AI & Dev Tools",value: "5",   color: "text-emerald-500" },
+    { label: "Technologies",  value: "22+", color: "text-cyan-400"    },
+    { label: "Frontend Stack",value: "6",   color: "text-violet-400"  },
+    { label: "Backend Stack", value: "6",   color: "text-pink-400"    },
+    { label: "AI & Dev Tools",value: "5",   color: "text-emerald-400" },
   ];
 
   return (
@@ -355,10 +355,11 @@ function StatsBanner() {
       {stats.map((s) => (
         <div
           key={s.label}
-          className="flex flex-col items-center justify-center py-5 px-4 rounded-2xl backdrop-blur-0.5 border border-white/[0.06] hover:border-white/[0.12] backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5"
+          className="flex flex-col items-center justify-center py-5 px-4 rounded-2xl border border-white/[0.10] hover:border-white/[0.20] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5"
+          style={{ background: "rgba(4, 6, 12, 0.50)" }}
         >
           <p className={`text-3xl font-black ${s.color} tracking-tight`}>{s.value}</p>
-          <p className="text-[11px] text-zinc-200 font-mono mt-1 tracking-wide">{s.label}</p>
+          <p className="text-[11px] text-zinc-300 font-mono mt-1 tracking-wide">{s.label}</p>
         </div>
       ))}
     </div>
@@ -369,19 +370,20 @@ function StatsBanner() {
 export default function SkillClient() {
   return (
     <div className="relative min-h-screen font-sans selection:bg-cyan-500/30 selection:text-cyan-400 flex flex-col justify-between overflow-hidden">
-      {/* Background Video */}
-      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden">
+      {/* Background Video — brightness filter matches the cinematic grading of Contact & Project pages */}
+      <div
+        className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden"
+        style={{ filter: "brightness(0.70) saturate(1.05)" }}
+      >
         <video
           src="https://res.cloudinary.com/djgg1xzaj/video/upload/v1785932605/Scene___Skills_Section_Prof_f3gxh1.mp4"
           autoPlay
           loop
           muted
           playsInline
+          disablePictureInPicture
           className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover"
         />
-        {/* Layered dark vignette */}
-        {/* <div className="absolute inset-0 bg-gradient-to-b from-[#07090e]/80 via-transparent to-[#07090e]/80" /> */}
-        <div className="absolute inset-0 backdrop-blur-[1px]" />
       </div>
 
       <Navbar activeSection="skills" />
