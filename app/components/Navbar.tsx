@@ -76,13 +76,13 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo (Top Left) */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="group-hover:scale-105 transition-transform drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]">
+            <div className="group-hover:scale-105 transition-transform drop-shadow-[0_0_12px_rgba(34,211,238,0.3)]">
               <Image
-                src="/logo.png"
-                alt="RS Portfolio Logo"
-                width={120}
-                height={120}
-                className="rounded-xl w-28 sm:w-36 h-auto"
+                src="/logo-rs.svg"
+                alt="Muhammad Riad Shekh Logo"
+                width={180}
+                height={48}
+                className="w-36 sm:w-44 h-auto"
                 priority
               />
             </div>
