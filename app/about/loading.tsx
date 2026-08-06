@@ -3,7 +3,7 @@ import Footer from "../components/Footer";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-[#07090e] text-zinc-100 font-sans flex flex-col justify-between">
+    <div className="min-h-screen text-zinc-100 font-sans flex flex-col justify-between">
       <Navbar activeSection="about" />
 
       <main className="relative z-10 pt-32 pb-20 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-16">

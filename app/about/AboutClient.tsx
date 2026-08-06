@@ -49,32 +49,49 @@ export default function AboutClient() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-zinc-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-400">
+    <div className="relative min-h-screen text-zinc-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-400 flex flex-col justify-between overflow-hidden">
+
+      {/* ── Background Video — color graded to match portfolio aesthetic ── */}
+      <div
+        className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden"
+        style={{ filter: "brightness(0.68) saturate(1.10) contrast(1.05)" }}
+      >
+        <video
+          src="https://res.cloudinary.com/djgg1xzaj/video/upload/v1786008084/clideo_editor_feb586d352f84e049a544030d0661b82_ydzmp6.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          disablePictureInPicture
+          className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover"
+        />
+      </div>
+
       {/* Navigation */}
       <Navbar activeSection="about" />
 
       {/* Main Section */}
-      <main className="relative z-10 pt-32 pb-20 px-4 sm:px-6 max-w-6xl mx-auto space-y-16">
-        
+      <main className="relative z-10 pt-32 pb-20 px-4 sm:px-6 max-w-6xl mx-auto space-y-16 flex-1">
+
         {/* Top Header */}
         <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div className="inline-block px-4 py-1 rounded-full bg-zinc-900/90 border border-zinc-800 text-xs font-semibold text-zinc-300 tracking-wide shadow-inner">
+          <div className="inline-block px-4 py-1 rounded-full border border-zinc-700/60 text-xs font-semibold text-zinc-300 tracking-wide backdrop-blur-md" style={{ background: "rgba(4, 6, 12, 0.55)" }}>
             About Me
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
             Get to know <span className="text-cyan-400">who I am</span>
           </h1>
-          <p className="text-zinc-400 text-sm sm:text-base font-light leading-relaxed">
+          <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed">
             A passionate developer dedicated to turning complex ideas into elegant, high-performance digital experiences.
           </p>
         </div>
 
         {/* Bio & Image Grid Section */}
         <div className="grid lg:grid-cols-12 gap-10 items-start">
-          
+
           {/* Left Frame Image */}
           <div className="lg:col-span-5 flex justify-center">
-            <div className="relative group w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden border border-zinc-800/80 bg-zinc-900/40 p-2 shadow-2xl shadow-cyan-950/20">
+            <div className="relative group w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden border border-zinc-700/60 p-2 shadow-2xl shadow-cyan-950/30 backdrop-blur-sm" style={{ background: "rgba(4, 6, 12, 0.45)" }}>
               <div className="relative w-full h-full rounded-xl overflow-hidden">
                 <Image
                   src="/riad.png"
@@ -97,8 +114,8 @@ export default function AboutClient() {
               <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">
                 React / Next.js Specialist
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-light pt-1">
-                I&apos;m <span className="text-zinc-200 font-semibold">Md. Riad Shekh</span> — a Full Stack Web Developer focused on scalable, modern and high-performance web applications.
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-light pt-1">
+                I&apos;m <span className="text-zinc-100 font-semibold">Md. Riad Shekh</span> — a Full Stack Web Developer focused on scalable, modern and high-performance web applications.
               </p>
             </div>
 
@@ -107,9 +124,10 @@ export default function AboutClient() {
               {highlights.map((item, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-full bg-[#0c1017] border border-zinc-800/80 hover:border-zinc-700 hover:bg-[#111622] transition-colors group"
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-full border border-zinc-700/50 hover:border-cyan-500/40 transition-colors group backdrop-blur-sm"
+                  style={{ background: "rgba(4, 6, 12, 0.48)" }}
                 >
-                  <div className="w-5 h-5 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                  <div className="w-5 h-5 rounded-full bg-cyan-500/15 border border-cyan-500/35 flex items-center justify-center shrink-0">
                     <svg className="w-3 h-3 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
@@ -137,7 +155,8 @@ export default function AboutClient() {
                 target="_blank"
                 download="Md Riad Shekh Final Resume.pdf"
                 rel="noreferrer"
-                className="px-6 py-3 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 hover:border-cyan-500/50 text-zinc-200 hover:text-white text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shadow-lg group cursor-pointer"
+                className="px-6 py-3 rounded-xl border border-zinc-700/60 hover:border-cyan-500/50 text-zinc-200 hover:text-white text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shadow-lg group cursor-pointer backdrop-blur-sm"
+                style={{ background: "rgba(4, 6, 12, 0.50)" }}
               >
                 <svg className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -153,19 +172,20 @@ export default function AboutClient() {
           {stats.map((stat, idx) => (
             <div
               key={idx}
-              className="p-6 rounded-2xl bg-[#090d14] border border-zinc-800/80 hover:border-zinc-700 transition-colors text-center space-y-2 flex flex-col items-center justify-center shadow-lg"
+              className="p-6 rounded-2xl border border-zinc-700/60 hover:border-zinc-600/80 transition-colors text-center space-y-2 flex flex-col items-center justify-center shadow-lg backdrop-blur-md"
+              style={{ background: "rgba(4, 6, 12, 0.52)" }}
             >
-              <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800/60 mb-1">
+              <div className="p-2.5 rounded-xl border border-zinc-700/50 mb-1" style={{ background: "rgba(10, 14, 22, 0.70)" }}>
                 {stat.icon}
               </div>
               <p className="text-3xl font-extrabold text-white tracking-tight">{stat.number}</p>
-              <p className="text-xs text-zinc-400 font-medium tracking-wide">{stat.label}</p>
+              <p className="text-xs text-zinc-300 font-medium tracking-wide">{stat.label}</p>
             </div>
           ))}
         </div>
 
         {/* Paragraphs Description */}
-        <div className="space-y-5 text-zinc-300 text-xs sm:text-sm leading-relaxed font-light border-t border-zinc-900/80 pt-10">
+        <div className="space-y-5 text-zinc-300 text-xs sm:text-sm leading-relaxed font-light border-t border-zinc-700/30 pt-10">
           <p>
             Hi, I&apos;m <span className="font-bold text-white">Md. Riad Shekh</span>, a passionate <span className="text-cyan-400 font-semibold">Full Stack Web Developer</span> with a strong interest in building modern, responsive, and user-friendly web applications.
           </p>
@@ -184,7 +204,7 @@ export default function AboutClient() {
         </div>
 
         {/* Bottom Core Stack Card */}
-        <div className="p-6 rounded-2xl bg-[#090d14] border border-zinc-800/80 text-center space-y-2 shadow-lg">
+        <div className="p-6 rounded-2xl border border-zinc-700/60 text-center space-y-2 shadow-lg backdrop-blur-md" style={{ background: "rgba(4, 6, 12, 0.52)" }}>
           <h4 className="text-sm font-bold text-cyan-400 tracking-wide uppercase">Core Stack:</h4>
           <p className="text-xs sm:text-sm text-zinc-300 font-medium">
             React, Next.js, Node.js, MongoDB, Tailwind CSS, Firebase, Docker, Vercel
