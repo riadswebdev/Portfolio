@@ -8,13 +8,25 @@ interface FrameScrollAnimationProps {
   filePrefix?: string;
   fileExtension?: string;
   className?: string;
-  containerHeight?: string; // e.g. "h-[400vh]"
+  containerHeight?: string;
   children?: React.ReactNode;
-  backgroundMode?: boolean; // when true: fixed full-screen canvas bg for the whole page
+  backgroundMode?: boolean;
 }
 
+// Build the explicit list of available frame numbers.
+// Frames 101-107 were deleted — skip them to prevent 404s and blank canvas.
+function buildFrameList(): number[] {
+  const frames: number[] = [];
+  for (let i = 1; i <= 100; i++) frames.push(i);
+  for (let i = 108; i <= 223; i++) frames.push(i);
+  return frames; // 216 frames total
+}
+
+const FRAME_LIST = buildFrameList();
+const TOTAL_AVAILABLE = FRAME_LIST.length; // 216
+
 export default function FrameScrollAnimation({
-  totalFrames = 223,
+  totalFrames = TOTAL_AVAILABLE,
   folderPath = "/frame",
   filePrefix = "ezgif-frame-",
   fileExtension = "png",
@@ -25,28 +37,54 @@ export default function FrameScrollAnimation({
 }: FrameScrollAnimationProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const imagesRef = useRef<HTMLImageElement[]>([]);
+  const imagesRef = useRef<(HTMLImageElement | null)[]>([]);
 
-  // Preload frames
+  // ── Progressive preload ──────────────────────────────────────────────────
+  // Mobile browsers crash when 200MB+ loads simultaneously.
+  // Load a small initial batch immediately, then stream the rest in chunks.
   useEffect(() => {
     let isMounted = true;
-    const loadedImages: HTMLImageElement[] = [];
+    const count = Math.min(totalFrames, TOTAL_AVAILABLE);
+    const loaded: (HTMLImageElement | null)[] = new Array(count).fill(null);
+    imagesRef.current = loaded;
 
-    for (let i = 1; i <= totalFrames; i++) {
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const INITIAL_BATCH = isMobile ? 20 : 40;
+    const BATCH_SIZE    = isMobile ? 8  : 20;
+    const BATCH_DELAY   = isMobile ? 80 : 30; // ms between batches
+
+    let batchStart = INITIAL_BATCH;
+
+    // Load first batch right away so the canvas has something to draw.
+    for (let i = 0; i < Math.min(INITIAL_BATCH, count); i++) {
+      const frameNum = String(FRAME_LIST[i]).padStart(3, "0");
       const img = new Image();
-      const frameNum = String(i).padStart(3, "0");
       img.src = `${folderPath}/${filePrefix}${frameNum}.${fileExtension}`;
-      loadedImages.push(img);
+      img.onerror = () => { loaded[i] = null; };
+      img.onload  = () => { loaded[i] = img; };
+      loaded[i] = img;
     }
 
-    imagesRef.current = loadedImages;
-
-    return () => {
-      isMounted = false;
+    const loadNextBatch = () => {
+      if (!isMounted || batchStart >= count) return;
+      const end = Math.min(batchStart + BATCH_SIZE, count);
+      for (let i = batchStart; i < end; i++) {
+        const frameNum = String(FRAME_LIST[i]).padStart(3, "0");
+        const img = new Image();
+        img.src = `${folderPath}/${filePrefix}${frameNum}.${fileExtension}`;
+        img.onerror = () => { loaded[i] = null; };
+        img.onload  = () => { loaded[i] = img; };
+        loaded[i] = img;
+      }
+      batchStart = end;
+      if (batchStart < count) setTimeout(loadNextBatch, BATCH_DELAY);
     };
+
+    setTimeout(loadNextBatch, BATCH_DELAY);
+    return () => { isMounted = false; };
   }, [totalFrames, folderPath, filePrefix, fileExtension, backgroundMode]);
 
-  // Smooth scroll render loop
+  // ── Render loop ──────────────────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -56,85 +94,104 @@ export default function FrameScrollAnimation({
     let animationFrameId: number;
     let targetFrame = 0;
     let currentFrame = 0;
+    let lastDrawnIndex = -1;
 
+    // For a fixed canvas (backgroundMode), getBoundingClientRect() returns 0×0
+    // before first paint on mobile — use window dimensions directly.
     const resizeCanvas = () => {
-      if (!canvas) return;
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = (rect.width || window.innerWidth) * dpr;
-      canvas.height = (rect.height || window.innerHeight) * dpr;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2); // cap at 2× for perf
+      if (backgroundMode) {
+        canvas.width  = window.innerWidth  * dpr;
+        canvas.height = window.innerHeight * dpr;
+      } else {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width  = (rect.width  || window.innerWidth)  * dpr;
+        canvas.height = (rect.height || window.innerHeight) * dpr;
+      }
+      ctx.scale(dpr, dpr);
+      lastDrawnIndex = -1; // force redraw after resize
     };
 
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
     const drawFrame = (frameIndex: number) => {
-      const img = imagesRef.current[frameIndex];
-      if (!img || !img.complete || img.naturalWidth === 0) return;
+      const images = imagesRef.current;
+      let img: HTMLImageElement | null = images[frameIndex] ?? null;
 
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-      const imgAspect = img.naturalWidth / img.naturalHeight;
-      const canvasAspect = canvasWidth / canvasHeight;
-
-      let drawWidth = canvasWidth;
-      let drawHeight = canvasHeight;
-      let offsetX = 0;
-      let offsetY = 0;
-
-      if (canvasAspect > imgAspect) {
-        drawHeight = canvasWidth / imgAspect;
-        offsetY = (canvasHeight - drawHeight) / 2;
-      } else {
-        drawWidth = canvasHeight * imgAspect;
-        offsetX = (canvasWidth - drawWidth) / 2;
+      // If this frame is missing/unloaded, walk outward to find the nearest
+      // valid neighbour — prevents blank canvas at deleted-frame positions.
+      if (!img || !img.complete || img.naturalWidth === 0) {
+        let found = false;
+        for (let delta = 1; delta < 8; delta++) {
+          const prev = images[frameIndex - delta];
+          if (prev && prev.complete && prev.naturalWidth > 0) { img = prev; found = true; break; }
+          const next = images[frameIndex + delta];
+          if (next && next.complete && next.naturalWidth > 0) { img = next; found = true; break; }
+        }
+        if (!found) return;
       }
 
-      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+      const dpr      = Math.min(window.devicePixelRatio || 1, 2);
+      const logicalW = backgroundMode ? window.innerWidth  : canvas.width  / dpr;
+      const logicalH = backgroundMode ? window.innerHeight : canvas.height / dpr;
+
+      ctx.clearRect(0, 0, logicalW, logicalH);
+
+      const imgAspect    = img!.naturalWidth / img!.naturalHeight;
+      const canvasAspect = logicalW / logicalH;
+
+      let drawWidth = logicalW, drawHeight = logicalH, offsetX = 0, offsetY = 0;
+
+      if (canvasAspect > imgAspect) {
+        drawHeight = logicalW / imgAspect;
+        offsetY    = (logicalH - drawHeight) / 2;
+      } else {
+        drawWidth = logicalH * imgAspect;
+        offsetX   = (logicalW - drawWidth) / 2;
+      }
+
+      ctx.drawImage(img!, offsetX, offsetY, drawWidth, drawHeight);
     };
+
+    const effectiveFrames = Math.min(totalFrames, TOTAL_AVAILABLE);
 
     const updateScrollProgress = () => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const scrollableDistance = rect.height - window.innerHeight;
-      
       if (scrollableDistance <= 0) return;
-
-      // Calculate progress relative to container position in viewport
-      const scrolled = -rect.top;
-      const progress = Math.min(Math.max(scrolled / scrollableDistance, 0), 1);
-      targetFrame = Math.floor(progress * (totalFrames - 1));
+      const progress = Math.min(Math.max(-rect.top / scrollableDistance, 0), 1);
+      targetFrame = Math.floor(progress * (effectiveFrames - 1));
     };
 
-    updateScrollProgress();
-    window.addEventListener("scroll", updateScrollProgress, { passive: true });
-
-    // backgroundMode: drive progress from total page scroll
     const updateBgProgress = () => {
-      const scrollTop = window.scrollY;
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
       if (maxScroll <= 0) return;
-      const progress = Math.min(Math.max(scrollTop / maxScroll, 0), 1);
-      targetFrame = Math.floor(progress * (totalFrames - 1));
+      const progress = Math.min(Math.max(window.scrollY / maxScroll, 0), 1);
+      targetFrame = Math.floor(progress * (effectiveFrames - 1));
     };
 
     if (backgroundMode) {
-      window.removeEventListener("scroll", updateScrollProgress);
       updateBgProgress();
       window.addEventListener("scroll", updateBgProgress, { passive: true });
+    } else {
+      updateScrollProgress();
+      window.addEventListener("scroll", updateScrollProgress, { passive: true });
     }
 
+    // Slightly higher lerp on mobile prevents permanent lag on low-FPS devices.
+    const isMobile = window.innerWidth < 768;
+    const LERP = isMobile ? 0.18 : 0.12;
+
     const render = () => {
-      // Lerp smoothing factor
-      currentFrame += (targetFrame - currentFrame) * 0.12;
-
-      const indexToDraw = Math.round(currentFrame);
-      const safeIndex = Math.min(Math.max(indexToDraw, 0), totalFrames - 1);
-
-      drawFrame(safeIndex);
+      currentFrame += (targetFrame - currentFrame) * LERP;
+      const safeIndex = Math.min(Math.max(Math.round(currentFrame), 0), effectiveFrames - 1);
+      // Only redraw when index actually changes — saves GPU work on mobile.
+      if (safeIndex !== lastDrawnIndex) {
+        drawFrame(safeIndex);
+        lastDrawnIndex = safeIndex;
+      }
       animationFrameId = requestAnimationFrame(render);
     };
 
@@ -151,24 +208,25 @@ export default function FrameScrollAnimation({
     };
   }, [totalFrames, backgroundMode]);
 
-  // Background mode: fixed full-screen canvas, no wrapper div
   if (backgroundMode) {
     return (
       <canvas
         ref={canvasRef}
-        className="fixed inset-0 w-full h-full object-cover -z-10 pointer-events-none"
+        style={{ width: "100vw", height: "100vh" }}
+        className="fixed inset-0 -z-10 pointer-events-none"
       />
     );
   }
 
-  // Normal scroll-scrub mode
   return (
     <div ref={containerRef} className={`relative ${containerHeight} ${className}`}>
       <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
         <canvas ref={canvasRef} className="block w-full h-full object-cover" />
-
-        {/* Overlay Content */}
-        {children && <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between">{children}</div>}
+        {children && (
+          <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between">
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );
