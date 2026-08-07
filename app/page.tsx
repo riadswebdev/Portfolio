@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import FrameScrollAnimation from "./components/FrameScrollAnimation";
@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import SkillsOverview from "./components/SkillsOverview";
 import GithubProjects from "./components/GithubProjects";
+import Link from "next/link";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -26,6 +27,13 @@ const staggerContainer = {
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState("home");
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <div className="min-h-screen text-zinc-100 font-sans selection:bg-blue-500/30 selection:text-blue-400">
@@ -81,7 +89,7 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <motion.div variants={fadeInUp} className="flex flex-wrap gap-3 items-center pt-2">
-              <a
+              <Link
                 href="/contact"
                 className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2 text-sm"
               >
@@ -89,14 +97,14 @@ export default function Home() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
-              </a>
-              <a
+              </Link>
+              <Link
                 href="#projects"
                 className="px-7 py-3.5 rounded-2xl bg-zinc-900/70 border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white font-medium transition-all duration-300 hover:-translate-y-0.5 text-sm backdrop-blur-sm"
               >
                 Explore Projects
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/Md%20Riad%20Shekh%20Final%20Resume.pdf"
                 target="_blank"
                 download="Md Riad Shekh Final Resume.pdf"
@@ -107,7 +115,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Download Resume
-              </a>
+              </Link>
             </motion.div>
 
             {/* Quick Stats */}
@@ -476,6 +484,34 @@ export default function Home() {
 
       {/* Footer */}
       <Footer />
+
+      {/* ── Scroll To Top Button ── */}
+      <motion.button
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        initial={{ opacity: 0, scale: 0.7, y: 20 }}
+        animate={showScrollTop ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.7, y: 20 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        aria-label="Scroll to top"
+        className="fixed bottom-8 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center shadow-xl shadow-cyan-500/25 cursor-pointer group"
+        style={{
+          background: "linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)",
+          boxShadow: showScrollTop ? "0 0 24px rgba(34,211,238,0.45), 0 4px 20px rgba(99,102,241,0.3)" : "none",
+          pointerEvents: showScrollTop ? "auto" : "none",
+        }}
+      >
+        {/* Glint ring */}
+        <motion.span
+          className="absolute inset-0 rounded-full"
+          animate={{ boxShadow: ["0 0 0px rgba(34,211,238,0.3)", "0 0 18px rgba(34,211,238,0.7)", "0 0 0px rgba(34,211,238,0.3)"] }}
+          transition={{ duration: 2.2, repeat: Infinity }}
+        />
+        <svg
+          className="w-5 h-5 text-white group-hover:scale-110 transition-transform duration-200"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+        </svg>
+      </motion.button>
     </div>
   );
 }
