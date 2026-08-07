@@ -340,11 +340,10 @@ function StatsBanner() {
 export default function SkillClient() {
   return (
     <div className="relative min-h-screen font-sans flex flex-col selection:bg-cyan-500/20 selection:text-cyan-300">
-      <div className="fixed inset-0 -z-20 overflow-hidden" style={{ filter: "brightness(0.65) saturate(1.1)" }}>
+      <div className="fixed inset-0 -z-20 overflow-hidden" style={{ filter: "brightness(0.70) saturate(1.05)" }}>
         <video src="https://res.cloudinary.com/djgg1xzaj/video/upload/v1785932605/Scene___Skills_Section_Prof_f3gxh1.mp4"
           autoPlay loop muted playsInline disablePictureInPicture
           className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/35 to-[#050816]" />
       </div>
       <Navbar activeSection="skills" />
       <main className="relative z-10 pt-32 pb-28 px-6 max-w-6xl mx-auto w-full flex-1 space-y-16">

@@ -52,8 +52,8 @@ export default function AboutClient() {
   return (
     <div className="relative min-h-screen text-zinc-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-400 flex flex-col justify-between overflow-hidden">
 
-      {/* ── Background Video & Overlay Contrast ── */}
-      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden" style={{ filter: "brightness(0.65) saturate(1.1)" }}>
+      {/* ── Background Video ── */}
+      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden" style={{ filter: "brightness(0.70) saturate(1.05)" }}>
         <video
           src="https://res.cloudinary.com/djgg1xzaj/video/upload/v1786008084/clideo_editor_feb586d352f84e049a544030d0661b82_ydzmp6.mp4"
           autoPlay
@@ -63,8 +63,6 @@ export default function AboutClient() {
           disablePictureInPicture
           className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover"
         />
-        {/* Dark radial gradient vignette overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-[#050816]" />
       </div>
 
       {/* Navigation */}

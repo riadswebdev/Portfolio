@@ -132,9 +132,9 @@ export default function ContactClient() {
   ];
 
   return (
-    <div className="relative min-h-screen font-sans selection:bg-cyan-500/30 selection:text-cyan-400 flex flex-col justify-between overflow-hidden">
-      {/* Background Video & Contrast Overlay */}
-      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden" style={{ filter: "brightness(0.65) saturate(1.1)" }}>
+    <div className="relative min-h-screen font-sans  selection:text-cyan-400 flex flex-col justify-between overflow-hidden">
+      {/* Background Video */}
+      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden" style={{ filter: "brightness(0.70) saturate(1.05)" }}>
         <video
           src="https://res.cloudinary.com/djgg1xzaj/video/upload/Use_Image_as_the_primary_ide_3__processed_cw6jxk.mp4"
           autoPlay
@@ -144,8 +144,6 @@ export default function ContactClient() {
           disablePictureInPicture
           className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover"
         />
-        {/* Vignette overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/35 to-[#050816]" />
       </div>
 
       <Navbar activeSection="contact" />

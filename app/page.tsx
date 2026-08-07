@@ -416,8 +416,8 @@ export default function Home() {
           className="relative rounded-3xl border border-white/15 p-10 sm:p-20 overflow-hidden shadow-2xl backdrop-blur-md"
           style={{ background: "rgba(4, 6, 12, 0.55)" }}
         >
-          {/* Background Video & Overlay */}
-          <div className="absolute inset-0 w-full h-full pointer-events-none -z-10 overflow-hidden" style={{ filter: "brightness(0.65) saturate(1.1)" }}>
+          {/* Background Video */}
+          <div className="absolute inset-0 w-full h-full pointer-events-none -z-10 overflow-hidden" style={{ filter: "brightness(0.70) saturate(1.05)" }}>
             <video
               src="https://res.cloudinary.com/djgg1xzaj/video/upload/Use_Image_as_the_primary_ide_3__processed_cw6jxk.mp4"
               autoPlay
@@ -427,8 +427,6 @@ export default function Home() {
               disablePictureInPicture
               className="absolute top-1/2 left-1/2 w-full h-full min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover scale-125"
             />
-            {/* Vignette overlay for text legibility */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/65 to-black/85" />
           </div>
 
           {/* Decorative gradient border glow */}
