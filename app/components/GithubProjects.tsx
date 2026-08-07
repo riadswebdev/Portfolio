@@ -649,7 +649,7 @@ export default function GithubProjects({
                 }}
               >
                 <TiltCard
-                  className="relative group p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/80 hover:border-blue-500/50 hover:bg-zinc-900/60 transition-colors flex flex-col justify-between overflow-hidden shadow-xl h-full"
+                  className="relative group p-6 rounded-3xl bg-[#060a12]/60 backdrop-blur-md border border-white/10 hover:border-cyan-500/40 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between overflow-hidden h-full"
                 >
                 <div>
                   {/* Banner image or preview fallback */}
