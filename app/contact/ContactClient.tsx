@@ -133,8 +133,8 @@ export default function ContactClient() {
 
   return (
     <div className="relative min-h-screen font-sans selection:bg-cyan-500/30 selection:text-cyan-400 flex flex-col justify-between overflow-hidden">
-      {/* Background Video */}
-      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden">
+      {/* Background Video & Contrast Overlay */}
+      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden" style={{ filter: "brightness(0.65) saturate(1.1)" }}>
         <video
           src="https://res.cloudinary.com/djgg1xzaj/video/upload/Use_Image_as_the_primary_ide_3__processed_cw6jxk.mp4"
           autoPlay
@@ -144,6 +144,8 @@ export default function ContactClient() {
           disablePictureInPicture
           className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover"
         />
+        {/* Vignette overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/35 to-[#050816]" />
       </div>
 
       <Navbar activeSection="contact" />
@@ -154,13 +156,16 @@ export default function ContactClient() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center max-w-xl mx-auto space-y-2"
+          className="text-center max-w-xl mx-auto space-y-3"
         >
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-cyan-400">
-            Get In Touch
+          <div className="inline-block px-4 py-1.5 rounded-full border border-cyan-500/30 text-xs font-semibold text-cyan-400 tracking-wider uppercase backdrop-blur-md shadow-lg shadow-cyan-500/10" style={{ background: "rgba(4, 6, 12, 0.65)" }}>
+            Reach Out
+          </div>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+            Get In <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">Touch</span>
           </h1>
-          <p className="text-zinc-100 text-sm font-light">
-            Have a project in mind? Let&apos;s work together.
+          <p className="text-zinc-300 text-sm font-light leading-relaxed">
+            Have a project in mind or want to collaborate? Let&apos;s build something extraordinary together.
           </p>
         </motion.div>
 
@@ -174,13 +179,14 @@ export default function ContactClient() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="lg:col-span-5 space-y-6"
           >
-            <div className="p-6 sm:p-8 rounded-3xl border border-zinc-800/80 space-y-6 shadow-2xl">
+            <div className="p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl backdrop-blur-md" style={{ background: "rgba(4, 6, 12, 0.58)" }}>
               <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">
+                <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400" />
                   Contact Information
                 </h2>
-                <p className="text-xs text-zinc-100 font-light mt-1">
-                  Feel free to reach out through any channel.
+                <p className="text-xs text-zinc-300 font-light mt-1">
+                  Feel free to reach out through any channel below.
                 </p>
               </div>
 
@@ -190,16 +196,17 @@ export default function ContactClient() {
                   <a
                     key={idx}
                     href={info.href}
-                    className="flex items-center gap-4 p-3.5 rounded-2xl border border-zinc-800/60 hover:border-zinc-700 transition-all group"
+                    className="flex items-center gap-4 p-3.5 rounded-2xl border border-white/10 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 group backdrop-blur-sm"
+                    style={{ background: "rgba(10, 14, 24, 0.45)" }}
                   >
-                    <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${info.bgColor}`}>
+                    <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${info.bgColor} group-hover:scale-105 transition-transform`}>
                       {info.icon}
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] font-black tracking-wider font-mono text-zinc-400 uppercase">
                         {info.title}
                       </p>
-                      <p className="text-xs font-semibold text-zinc-200 group-hover:text-white truncate">
+                      <p className="text-xs font-semibold text-zinc-200 group-hover:text-white truncate transition-colors">
                         {info.value}
                       </p>
                     </div>
@@ -208,9 +215,9 @@ export default function ContactClient() {
               </div>
 
               {/* Follow Me Section */}
-              <div className="pt-4 border-t border-zinc-800/60 space-y-3">
-                <h3 className="text-sm font-bold text-white tracking-wide">
-                  Follow Me
+              <div className="pt-4 border-t border-white/10 space-y-3">
+                <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest">
+                  Connect With Me
                 </h3>
                 <div className="grid grid-cols-2 gap-2.5">
                   {socialLinks.map((social) => (
@@ -219,7 +226,7 @@ export default function ContactClient() {
                       href={social.href}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-zinc-800/60 hover:border-zinc-700 text-xs font-medium text-zinc-100 hover:text-white transition-colors group"
+                      className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-white/10 hover:border-cyan-500/40 hover:bg-white/5 text-xs font-medium text-zinc-200 hover:text-white transition-all group backdrop-blur-sm"
                     >
                       {social.icon}
                       <span>{social.name}</span>
@@ -237,27 +244,28 @@ export default function ContactClient() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="lg:col-span-7"
           >
-            <div className="p-6 sm:p-10 rounded-3xl border border-zinc-800/80 space-y-6 shadow-2xl">
+            <div className="p-6 sm:p-10 rounded-3xl border border-white/10 space-y-6 shadow-2xl backdrop-blur-md" style={{ background: "rgba(4, 6, 12, 0.58)" }}>
               <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
+                <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400" />
                   Send a Message
                 </h2>
-                <p className="text-xs text-zinc-100 font-light mt-1">
-                  I&apos;ll get back to you as soon as possible.
+                <p className="text-xs text-zinc-300 font-light mt-1">
+                  Have a question or proposal? Send a message directly to my inbox.
                 </p>
               </div>
 
               {submitted && (
-                <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-medium flex items-center gap-2">
+                <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-medium flex items-center gap-2 shadow-lg shadow-cyan-500/10">
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Thank you! Your message has been sent successfully to Gmail.
+                  Thank you! Your message has been sent successfully to my inbox.
                 </div>
               )}
 
               {errorMessage && (
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-medium flex items-center gap-2">
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-medium flex items-center gap-2">
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -277,7 +285,7 @@ export default function ContactClient() {
                       placeholder="John Doe"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition-all"
+                      className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition-all backdrop-blur-sm"
                     />
                   </div>
 
@@ -291,7 +299,7 @@ export default function ContactClient() {
                       placeholder="john@example.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition-all"
+                      className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition-all backdrop-blur-sm"
                     />
                   </div>
                 </div>
@@ -306,7 +314,7 @@ export default function ContactClient() {
                     placeholder="Project discussion"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition-all"
+                    className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition-all backdrop-blur-sm"
                   />
                 </div>
 
@@ -320,14 +328,14 @@ export default function ContactClient() {
                     placeholder="Tell me about your project..."
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition-all resize-none"
+                    className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition-all resize-none backdrop-blur-sm"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-semibold shadow-lg shadow-cyan-500/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>

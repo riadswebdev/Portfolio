@@ -278,7 +278,7 @@ function ClusterPanel({ cat, index }: { cat: Cat; index: number }) {
   return (
     <motion.div ref={outerRef} initial={{ opacity: 0, y: 38 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.65, delay: index * 0.13 }}
       className="relative rounded-3xl overflow-hidden"
-      style={{ background: "rgba(5, 8, 22, 0.68)", border: `1px solid rgba(${cat.rgb}, 0.18)`, boxShadow: `0 0 70px rgba(${cat.rgb}, 0.05), 0 1px 0 rgba(255,255,255,0.04) inset`, backdropFilter: "blur(22px)", WebkitBackdropFilter: "blur(22px)" }}>
+      style={{ background: "rgba(5, 8, 22, 0.2)", border: `1px solid rgba(${cat.rgb}, 0.3)`, boxShadow: `0 0 70px rgba(${cat.rgb}, 0.05), 0 1px 0 rgba(255,255,255,0.04) inset`, backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(22px)" }}>
       <div style={{ position: "absolute", top: -70, right: -70, width: 220, height: 220, borderRadius: "50%", pointerEvents: "none", background: `radial-gradient(circle, rgba(${cat.rgb}, 0.11) 0%, transparent 70%)` }} />
       <div className="flex items-center gap-4 px-6 pt-6 pb-4">
         <div style={{ width: 38, height: 38, borderRadius: 11, flexShrink: 0, background: `rgba(${cat.rgb}, 0.1)`, border: `1px solid rgba(${cat.rgb}, 0.22)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -323,7 +323,7 @@ function StatsBanner() {
       {STATS.map((s, i) => (
         <motion.div key={s.label} initial={{ opacity: 0, scale: 0.82 }} animate={inView ? { opacity: 1, scale: 1 } : {}} transition={{ duration: 0.45, delay: i * 0.08 }}
           className="relative flex flex-col items-center justify-center py-6 px-3 rounded-2xl overflow-hidden"
-          style={{ background: `rgba(${s.rgb}, 0.05)`, border: `1px solid rgba(${s.rgb}, 0.18)`, backdropFilter: "blur(14px)" }}>
+          style={{ background: `rgba(${s.rgb}, 0.1)`, border: `1px solid rgba(${s.rgb}, 0.3)`, backdropFilter: "blur(10px)" }}>
           <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 50% 0%, rgba(${s.rgb}, 0.13) 0%, transparent 65%)`, pointerEvents: "none" }} />
           <motion.p className="text-3xl font-black tabular-nums relative" style={{ color: s.color, textShadow: `0 0 20px ${s.color}60` }}
             animate={{ textShadow: [`0 0 16px ${s.color}40`, `0 0 30px ${s.color}90`, `0 0 16px ${s.color}40`] }}
@@ -340,10 +340,11 @@ function StatsBanner() {
 export default function SkillClient() {
   return (
     <div className="relative min-h-screen font-sans flex flex-col selection:bg-cyan-500/20 selection:text-cyan-300">
-      <div className="fixed inset-0 -z-20 overflow-hidden" style={{ filter: "brightness(0.68) saturate(1.1)" }}>
+      <div className="fixed inset-0 -z-20 overflow-hidden" style={{ filter: "brightness(0.65) saturate(1.1)" }}>
         <video src="https://res.cloudinary.com/djgg1xzaj/video/upload/v1785932605/Scene___Skills_Section_Prof_f3gxh1.mp4"
           autoPlay loop muted playsInline disablePictureInPicture
           className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/35 to-[#050816]" />
       </div>
       <Navbar activeSection="skills" />
       <main className="relative z-10 pt-32 pb-28 px-6 max-w-6xl mx-auto w-full flex-1 space-y-16">
