@@ -3,33 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import {
+  GithubRepo,
+  ParsedTechStack,
+  TECH_DICTIONARY,
+} from "../lib/github";
 
-export interface ParsedTechStack {
-  frontend: string[];
-  backend: string[];
-  database: string[];
-  devTools: string[];
-}
-
-export interface GithubRepo {
-  id: number;
-  name: string;
-  full_name: string;
-  html_url: string;
-  description: string | null;
-  stargazers_count: number;
-  forks_count: number;
-  language: string | null;
-  topics: string[];
-  updated_at: string;
-  bannerUrl?: string | null;
-  readmeContent?: string | null;
-  imagesInReadme?: string[];
-  default_branch: string;
-  techStack: ParsedTechStack;
-  keyFeatures: string[];
-  liveUrl?: string | null;
-}
+const repoCache = new Map<string, GithubRepo[]>();
+const repoFetchPromises = new Map<string, Promise<GithubRepo[]>>();
 
 interface GithubProjectsProps {
   username?: string;
@@ -39,48 +20,27 @@ interface GithubProjectsProps {
   showSearch?: boolean;
 }
 
-// Tech keywords dictionary for README parsing
-const TECH_DICTIONARY = {
-  frontend: [
-    "Next.js 16", "Next.js", "React 19", "React.js", "React", "Vue.js", "Vue", "Angular", "Svelte", 
-    "TypeScript", "JavaScript", "HTML5", "HTML", "CSS3", "CSS", "Tailwind CSS 4", "Tailwind CSS", "TailwindCSS", "Tailwind", 
-    "HeroUI", "DaisyUI", "Framer Motion", "Lucide React", "React Icons", "next-themes", "Redux", "Zustand", "Bootstrap"
-  ],
-  backend: [
-    "Better Auth", "Google OAuth", "Stripe API", "Stripe", "Node.js", "Node", "Express.js", "Express", "NestJS", 
-    "Python", "Django", "Flask", "FastAPI", "Java", "Spring Boot", "Go", "Golang", "PHP", "Laravel", 
-    "REST API", "GraphQL", "JWT", "OAuth"
-  ],
-  database: [
-    "MongoDB", "Mongoose", "PostgreSQL", "Postgres", "MySQL", "SQLite", 
-    "Redis", "Prisma", "Supabase", "Firebase", "Firestore", "DynamoDB", "CockroachDB"
-  ],
-  devTools: [
-    "ESLint", "React Compiler", "Vercel", "Docker", "Git", "GitHub", "Postman", "Render", "Webpack", "Vite", "Turbopack"
-  ]
-};
-
 // ─── Category filter definitions ────────────────────────────────────────────
 const CATEGORIES = [
-  { id: "all",        label: "All" },
-  { id: "react",      label: "React" },
-  { id: "nextjs",     label: "Next.js" },
+  { id: "all", label: "All" },
+  { id: "react", label: "React" },
+  { id: "nextjs", label: "Next.js" },
   { id: "typescript", label: "TypeScript" },
-  { id: "fullstack",  label: "Full Stack" },
-  { id: "3d",         label: "3D / Canvas" },
+  { id: "fullstack", label: "Full Stack" },
+  { id: "3d", label: "3D / Canvas" },
 ];
 
 function getRepoCategories(repo: GithubRepo): string[] {
   const cats: string[] = ["all"];
   const ft = repo.techStack?.frontend ?? [];
-  const bk = repo.techStack?.backend  ?? [];
+  const bk = repo.techStack?.backend ?? [];
   const topics = repo.topics ?? [];
 
-  if (ft.some((t) => /react/i.test(t)))                            cats.push("react");
-  if (ft.some((t) => /next\.?js/i.test(t)))                        cats.push("nextjs");
-  if (ft.some((t) => /typescript/i.test(t)))                       cats.push("typescript");
-  if (ft.length > 0 && bk.length > 0)                              cats.push("fullstack");
-  if (topics.some((t) => /3d|threejs|webgl|canvas/i.test(t)))      cats.push("3d");
+  if (ft.some((t) => /react/i.test(t))) cats.push("react");
+  if (ft.some((t) => /next\.?js/i.test(t))) cats.push("nextjs");
+  if (ft.some((t) => /typescript/i.test(t))) cats.push("typescript");
+  if (ft.length > 0 && bk.length > 0) cats.push("fullstack");
+  if (topics.some((t) => /3d|threejs|webgl|canvas/i.test(t))) cats.push("3d");
 
   return cats;
 }
@@ -94,16 +54,26 @@ function TiltCard({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const rectRef = useRef<DOMRect | null>(null);
+
+  const updateRect = () => {
+    if (ref.current) {
+      rectRef.current = ref.current.getBoundingClientRect();
+    }
+  };
 
   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = ref.current;
     if (!el) return;
-    const { left, top, width, height } = el.getBoundingClientRect();
-    const x = (e.clientX - left) / width  - 0.5;   // -0.5 … +0.5
-    const y = (e.clientY - top)  / height - 0.5;
+    let rect = rectRef.current;
+    if (!rect) {
+      rect = el.getBoundingClientRect();
+      rectRef.current = rect;
+    }
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
     el.style.transition = "transform 0.08s linear";
-    el.style.transform  = `perspective(900px) rotateY(${x * 24}deg) rotateX(${-y * 24}deg) scale3d(1.03,1.03,1.03)`;
-    // move the glint overlay
+    el.style.transform = `perspective(900px) rotateY(${x * 24}deg) rotateX(${-y * 24}deg) scale3d(1.03,1.03,1.03)`;
     const glint = el.querySelector<HTMLElement>(".tilt-glint");
     if (glint) {
       glint.style.background = `radial-gradient(circle at ${(x + 0.5) * 100}% ${(y + 0.5) * 100}%, rgba(255,255,255,0.12) 0%, transparent 65%)`;
@@ -115,7 +85,8 @@ function TiltCard({
     const el = ref.current;
     if (!el) return;
     el.style.transition = "transform 0.55s cubic-bezier(.23,1,.32,1)";
-    el.style.transform  = "perspective(900px) rotateY(0deg) rotateX(0deg) scale3d(1,1,1)";
+    el.style.transform =
+      "perspective(900px) rotateY(0deg) rotateX(0deg) scale3d(1,1,1)";
     const glint = el.querySelector<HTMLElement>(".tilt-glint");
     if (glint) glint.style.opacity = "0";
   };
@@ -151,16 +122,24 @@ export default function GithubProjects({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Parses Markdown sections from README
-  const parseReadmeSections = (readmeText: string, topics: string[] = [], language: string | null = null) => {
+  const parseReadmeSections = (
+    readmeText: string,
+    topics: string[] = [],
+    language: string | null = null,
+  ) => {
     const combinedText = `${readmeText} ${topics.join(" ")} ${language || ""}`;
-    
+
     // 1. Tech Stack Extraction
     const extractMatches = (keywords: string[]) => {
       const matched = new Set<string>();
       keywords.forEach((keyword) => {
-        const regex = new RegExp(`\\b${keyword.replace(".", "\\.").replace("+", "\\+")}\\b`, "i");
+        const regex = new RegExp(
+          `\\b${keyword.replace(".", "\\.").replace("+", "\\+")}\\b`,
+          "i",
+        );
         if (regex.test(combinedText)) {
           matched.add(keyword);
         }
@@ -178,7 +157,7 @@ export default function GithubProjects({
           (other) =>
             other !== item &&
             other.toLowerCase().includes(itemLower) &&
-            other.length > item.length
+            other.length > item.length,
         );
       });
     };
@@ -210,9 +189,12 @@ export default function GithubProjects({
     // Extract Live Demo Link
     let liveUrl: string | null = null;
     if (readmeText) {
-      const liveLinkMatch = /Live Website.*?\]\((https?:\/\/[^\s\)]+)\)/i.exec(readmeText) ||
-                            /\[(?:Live Demo|Live Site|Website)\]\((https?:\/\/[^\s\)]+)\)/i.exec(readmeText) ||
-                            /https?:\/\/[a-zA-Z0-9-]+\.vercel\.app[^\s\)]*/i.exec(readmeText);
+      const liveLinkMatch =
+        /Live Website.*?\]\((https?:\/\/[^\s\)]+)\)/i.exec(readmeText) ||
+        /\[(?:Live Demo|Live Site|Website)\]\((https?:\/\/[^\s\)]+)\)/i.exec(
+          readmeText,
+        ) ||
+        /https?:\/\/[a-zA-Z0-9-]+\.vercel\.app[^\s\)]*/i.exec(readmeText);
       if (liveLinkMatch) {
         liveUrl = liveLinkMatch[1] || liveLinkMatch[0];
       }
@@ -231,7 +213,13 @@ export default function GithubProjects({
         const textBlock = overviewMatch[1]
           .split("\n")
           .map((line) => line.trim())
-          .filter((line) => line.length > 0 && !line.startsWith("#") && !line.startsWith("-") && !line.startsWith("!["))
+          .filter(
+            (line) =>
+              line.length > 0 &&
+              !line.startsWith("#") &&
+              !line.startsWith("-") &&
+              !line.startsWith("!["),
+          )
           .join(" ");
 
         if (textBlock.length > 0) {
@@ -252,24 +240,34 @@ export default function GithubProjects({
               !p.startsWith("![") &&
               !p.startsWith("<") &&
               !p.startsWith("-") &&
-              !p.startsWith("*")
+              !p.startsWith("*"),
           );
 
         if (paragraphs.length > 0) {
-          const sentences = paragraphs[0].match(/[^.!?]+[.!?]+/g) || [paragraphs[0]];
+          const sentences = paragraphs[0].match(/[^.!?]+[.!?]+/g) || [
+            paragraphs[0],
+          ];
           extractedOverview = sentences.slice(0, 2).join(" ").trim();
         }
       }
 
       // Extract Key Features
-      const featuresSectionRegex = /##\s*.*?Key Features([\s\S]*?)(?=##|\n---|$)/i;
+      const featuresSectionRegex =
+        /##\s*.*?Key Features([\s\S]*?)(?=##|\n---|$)/i;
       const match = featuresSectionRegex.exec(readmeText);
       if (match && match[1]) {
         const lines = match[1].split("\n");
         lines.forEach((line) => {
           const trimmed = line.trim();
-          if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("### ")) {
-            const cleanLine = trimmed.replace(/^[-*#]+\s*/, "").replace(/[*_~]/g, "").trim();
+          if (
+            trimmed.startsWith("- ") ||
+            trimmed.startsWith("* ") ||
+            trimmed.startsWith("### ")
+          ) {
+            const cleanLine = trimmed
+              .replace(/^[-*#]+\s*/, "")
+              .replace(/[*_~]/g, "")
+              .trim();
             if (cleanLine.length > 5 && !keyFeatures.includes(cleanLine)) {
               keyFeatures.push(cleanLine);
             }
@@ -282,169 +280,90 @@ export default function GithubProjects({
   };
 
   useEffect(() => {
-    async function fetchReposAndDetails() {
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    const loadGithubRepos = async () => {
+      const cacheKey = username;
+      const cached = repoCache.get(cacheKey);
+      if (cached) {
+        setRepos(cached);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
 
-        // Include Personal Access Token if defined to prevent 403 Rate Limit errors
-        const headers: Record<string, string> = {
-          Accept: "application/vnd.github.v3+json",
-        };
-        const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
-        if (token && token.trim() !== "") {
-          headers["Authorization"] = `token ${token.trim()}`;
-        }
+        if (!repoFetchPromises.has(cacheKey)) {
+          const promise = (async () => {
+            const response = await fetch(
+              `/api/github?username=${encodeURIComponent(username)}`,
+              {
+                signal: abortController.signal,
+              },
+            );
 
-        // Fetch user repositories from GitHub API
-        const response = await fetch(
-          `https://api.github.com/users/${username}/repos?sort=updated&per_page=30`,
-          { headers }
-        );
-
-        if (response.status === 403) {
-          throw new Error("GitHub API Rate Limit exceeded (403). Add NEXT_PUBLIC_GITHUB_TOKEN in .env.local to resolve.");
-        }
-
-        if (!response.ok) {
-          throw new Error(`GitHub API returned status ${response.status}`);
-        }
-        const data: any[] = await response.json();
-
-        // Filter non-fork repositories
-        const nonForkRepos = data.filter((repo) => !repo.fork);
-
-        // Fetch README details for each repo in parallel
-        const enrichedRepos = await Promise.all(
-          nonForkRepos.map(async (repo) => {
-            let bannerUrl: string | null = null;
-            let readmeContent: string | null = null;
-            let imagesInReadme: string[] = [];
-            let techStack: ParsedTechStack = { frontend: [], backend: [], database: [], devTools: [] };
-            let keyFeatures: string[] = [];
-
-            try {
-              // Try fetching raw README file (checking README.md, readme.md, Readme.md)
-              const readmeVariants = ["README.md", "readme.md", "Readme.md"];
-              for (const variant of readmeVariants) {
-                const readmeRes = await fetch(
-                  `https://raw.githubusercontent.com/${repo.full_name}/${repo.default_branch || "main"}/${variant}`
-                );
-                if (readmeRes.ok) {
-                  readmeContent = await readmeRes.text();
-                  break;
-                }
-              }
-
-              // Fallback to GitHub Contents API if raw raw.githubusercontent fetch failed
-              if (!readmeContent) {
-                const apiReadmeRes = await fetch(
-                  `https://api.github.com/repos/${repo.full_name}/readme`,
-                  { headers }
-                );
-                if (apiReadmeRes.ok) {
-                  const readmeJson = await apiReadmeRes.json();
-                  if (readmeJson.content) {
-                    readmeContent = atob(readmeJson.content.replace(/\s/g, ""));
-                  }
-                }
-              }
-
-              if (readmeContent) {
-                // Extract images using regex (Markdown & HTML img tags)
-                const mdImageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+|\.\/[^\s\)]+|[^\s\)]+)\)/g;
-                const htmlImageRegex = /<img[^>]+src=["'](https?:\/\/[^"']+|\/[^"']+|\.\/[^"']+|[^"']+)["']/g;
-
-                const extracted: string[] = [];
-                let match;
-
-                const cleanImagePath = (pathStr: string) => {
-                  let cleaned = pathStr.trim();
-                  if (cleaned.startsWith("./")) cleaned = cleaned.substring(2);
-                  if (cleaned.startsWith("/")) cleaned = cleaned.substring(1);
-                  if (!cleaned.startsWith("http")) {
-                    cleaned = `https://raw.githubusercontent.com/${repo.full_name}/${repo.default_branch || "main"}/${cleaned}`;
-                  }
-                  return cleaned;
-                };
-
-                while ((match = mdImageRegex.exec(readmeContent)) !== null) {
-                  extracted.push(cleanImagePath(match[1]));
-                }
-
-                while ((match = htmlImageRegex.exec(readmeContent)) !== null) {
-                  extracted.push(cleanImagePath(match[1]));
-                }
-
-                imagesInReadme = Array.from(new Set(extracted));
-                if (imagesInReadme.length > 0) {
-                  bannerUrl = imagesInReadme[0];
-                }
-              }
-            } catch (err) {
-              console.warn(`Could not fetch README for ${repo.name}:`, err);
+            if (!response.ok) {
+              const body = await response.json().catch(() => null);
+              const message =
+                body?.error || `GitHub API returned status ${response.status}`;
+              throw new Error(message);
             }
 
-            // Parse Tech Stack, Overview Summary & Key Features directly from README content
-            const parsedData = parseReadmeSections(readmeContent || "", repo.topics || [], repo.language);
-            techStack = parsedData.techStack;
-            keyFeatures = parsedData.keyFeatures;
-            const liveUrl = parsedData.liveUrl || repo.html_url;
+            const data = (await response.json()) as GithubRepo[];
+            repoCache.set(cacheKey, data);
+            return data;
+          })();
 
-            // Use extracted Overview section sentences as repo description if repo.description is null/empty
-            const description = parsedData.extractedOverview || repo.description || null;
+          repoFetchPromises.set(cacheKey, promise);
+        }
 
-            return {
-              ...repo,
-              description,
-              bannerUrl,
-              readmeContent,
-              imagesInReadme,
-              techStack,
-              keyFeatures,
-              liveUrl,
-            } as GithubRepo;
-          })
-        );
-
-        // Filter to include only repositories that have a valid README.md file
-        const reposWithReadme = enrichedRepos.filter(
-          (repo) => repo.readmeContent && repo.readmeContent.trim().length > 0
-        );
-
-        setRepos(reposWithReadme);
+        const data = await repoFetchPromises.get(cacheKey)!;
+        setRepos(data);
       } catch (err: any) {
+        if (err.name === "AbortError") return;
         setError(err.message || "Failed to load GitHub repositories.");
       } finally {
         setLoading(false);
       }
-    }
+    };
 
-    fetchReposAndDetails();
+    loadGithubRepos();
+    return () => {
+      abortController.abort();
+    };
   }, [username]);
 
   // Extract all unique topics/tags across repos
   const allTopics = Array.from(
-    new Set(repos.flatMap((repo) => repo.topics || []))
+    new Set(repos.flatMap((repo) => repo.topics || [])),
   );
 
   // Which categories actually have repos (to show/hide buttons dynamically)
   const availableCategories = CATEGORIES.filter(
-    (cat) => cat.id === "all" || repos.some((r) => getRepoCategories(r).includes(cat.id))
+    (cat) =>
+      cat.id === "all" ||
+      repos.some((r) => getRepoCategories(r).includes(cat.id)),
   );
 
   // Filter repos based on search, topic, and category
   const filteredRepos = repos.filter((repo) => {
     const matchesSearch =
       repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (repo.description && repo.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (repo.language && repo.language.toLowerCase().includes(searchQuery.toLowerCase()));
+      (repo.description &&
+        repo.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (repo.language &&
+        repo.language.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesTopic =
-      selectedTopic === "all" || (repo.topics && repo.topics.includes(selectedTopic));
+      selectedTopic === "all" ||
+      (repo.topics && repo.topics.includes(selectedTopic));
 
     const matchesCategory =
-      selectedCategory === "all" || getRepoCategories(repo).includes(selectedCategory);
+      selectedCategory === "all" ||
+      getRepoCategories(repo).includes(selectedCategory);
 
     return matchesSearch && matchesTopic && matchesCategory;
   });
@@ -462,7 +381,8 @@ export default function GithubProjects({
   };
 
   // Apply maxItems cap after filtering
-  const displayedRepos = maxItems ? filteredRepos.slice(0, maxItems) : filteredRepos;
+  const displayedRepos =
+    maxItems ? filteredRepos.slice(0, maxItems) : filteredRepos;
   const hasMore = maxItems ? filteredRepos.length > maxItems : false;
 
   return (
@@ -483,7 +403,6 @@ export default function GithubProjects({
           <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
             GitHub Portfolio Projects
           </h2>
-       
         </div>
 
         {/* Search — hidden on homepage preview */}
@@ -515,11 +434,14 @@ export default function GithubProjects({
         {availableCategories.map((cat) => (
           <button
             key={cat.id}
-            onClick={() => { setSelectedCategory(cat.id); setSelectedTopic("all"); }}
+            onClick={() => {
+              setSelectedCategory(cat.id);
+              setSelectedTopic("all");
+            }}
             className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
-              selectedCategory === cat.id
-                ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30 scale-105"
-                : "bg-zinc-900/60 border border-zinc-800 text-zinc-100 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/60"
+              selectedCategory === cat.id ?
+                "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30 scale-105"
+              : "bg-zinc-900/60 border border-zinc-800 text-zinc-100 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/60"
             }`}
           >
             {cat.label}
@@ -536,9 +458,9 @@ export default function GithubProjects({
           <button
             onClick={() => setSelectedTopic("all")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-              selectedTopic === "all"
-                ? "bg-zinc-700 text-white"
-                : "bg-zinc-900/60 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+              selectedTopic === "all" ?
+                "bg-zinc-700 text-white"
+              : "bg-zinc-900/60 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
             }`}
           >
             All Topics
@@ -548,9 +470,9 @@ export default function GithubProjects({
               key={topic}
               onClick={() => setSelectedTopic(topic)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                selectedTopic === topic
-                  ? "bg-zinc-700 text-white"
-                  : "bg-zinc-900/60 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+                selectedTopic === topic ?
+                  "bg-zinc-700 text-white"
+                : "bg-zinc-900/60 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
               }`}
             >
               #{topic}
@@ -603,7 +525,9 @@ export default function GithubProjects({
       {/* Error State */}
       {!loading && error && (
         <div className="p-8 rounded-3xl bg-red-950/20 border border-red-900/40 text-center max-w-md mx-auto my-12 space-y-4">
-          <p className="text-red-400 text-sm font-medium leading-relaxed">{error}</p>
+          <p className="text-red-400 text-sm font-medium leading-relaxed">
+            {error}
+          </p>
           <div className="flex justify-center gap-3">
             <button
               onClick={() => window.location.reload()}
@@ -618,7 +542,9 @@ export default function GithubProjects({
       {/* Empty State */}
       {!loading && !error && filteredRepos.length === 0 && (
         <div className="p-12 text-center border border-dashed border-zinc-800 rounded-3xl max-w-lg mx-auto">
-          <p className="text-zinc-100 text-sm">No repositories found matching your filters.</p>
+          <p className="text-zinc-100 text-sm">
+            No repositories found matching your filters.
+          </p>
           <button
             onClick={() => {
               setSearchQuery("");
@@ -648,75 +574,83 @@ export default function GithubProjects({
                   ease: [0.22, 1, 0.36, 1],
                 }}
               >
-                <TiltCard
-                  className="relative group p-6 rounded-3xl bg-[#060a12]/60 backdrop-blur-md border border-white/10 hover:border-cyan-500/40 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between overflow-hidden h-full"
-                >
-                <div>
-                  {/* Banner image or preview fallback */}
-                  <div className="relative w-full h-48 rounded-2xl bg-zinc-950 overflow-hidden mb-5 border border-zinc-800/60 flex items-center justify-center">
-                    {repo.bannerUrl ? (
-                      <img
-                        src={repo.bannerUrl}
-                        alt={repo.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="p-6 text-center space-y-2">
-                        <span className="text-4xl">⚡</span>
-                        <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-                          {repo.language || "Code Repository"}
-                        </p>
+                <TiltCard className="relative group p-6 rounded-3xl bg-[#060a12]/60 backdrop-blur-md border border-white/10 hover:border-cyan-500/40 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between overflow-hidden h-full">
+                  <div>
+                    {/* Banner image or preview fallback */}
+                    <div className="relative w-full h-48 rounded-2xl bg-zinc-950 overflow-hidden mb-5 border border-zinc-800/60 flex items-center justify-center">
+                      {repo.bannerUrl ?
+                        <img
+                          src={repo.bannerUrl}
+                          alt={repo.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                      : <div className="p-6 text-center space-y-2">
+                          <span className="text-4xl">⚡</span>
+                          <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+                            {repo.language || "Code Repository"}
+                          </p>
+                        </div>
+                      }
+                      {/* Repo Stats Badge */}
+                      <div className="absolute top-3 right-3 flex items-center gap-2 px-2.5 py-1 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800 text-[11px] font-mono text-zinc-300">
+                        <span className="flex items-center gap-1 text-amber-400">
+                          ★ {repo.stargazers_count}
+                        </span>
+                        <span className="text-zinc-600">•</span>
+                        <span className="flex items-center gap-1 text-blue-400">
+                          🔀 {repo.forks_count}
+                        </span>
                       </div>
-                    )}
-                    {/* Repo Stats Badge */}
-                    <div className="absolute top-3 right-3 flex items-center gap-2 px-2.5 py-1 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800 text-[11px] font-mono text-zinc-300">
-                      <span className="flex items-center gap-1 text-amber-400">
-                        ★ {repo.stargazers_count}
-                      </span>
-                      <span className="text-zinc-600">•</span>
-                      <span className="flex items-center gap-1 text-blue-400">
-                        🔀 {repo.forks_count}
-                      </span>
+                    </div>
+
+                    {/* Title & Description Only */}
+                    <div className="space-y-2 mb-6">
+                      <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors truncate">
+                        {repo.name}
+                      </h3>
+
+                      <p className="text-zinc-100 text-xs leading-relaxed font-light line-clamp-3">
+                        {repo.description ||
+                          "No description provided for this GitHub repository."}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Title & Description Only */}
-                  <div className="space-y-2 mb-6">
-                    <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors truncate">
-                      {repo.name}
-                    </h3>
+                  {/* Card Footer Action */}
+                  <div className="pt-4 border-t border-zinc-800/60 flex items-center justify-between">
+                    <a
+                      href={repo.liveUrl || repo.html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 transition-colors"
+                    >
+                      Live Demo ↗
+                    </a>
 
-                    <p className="text-zinc-100 text-xs leading-relaxed font-light line-clamp-3">
-                      {repo.description || "No description provided for this GitHub repository."}
-                    </p>
+                    <button
+                      onClick={() => openModal(repo)}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      View Details
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
                   </div>
-                </div>
-
-                {/* Card Footer Action */}
-                <div className="pt-4 border-t border-zinc-800/60 flex items-center justify-between">
-                  <a
-                    href={repo.liveUrl || repo.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 transition-colors"
-                  >
-                    Live Demo ↗
-                  </a>
-
-                  <button
-                    onClick={() => openModal(repo)}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    View Details
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </TiltCard>
+                </TiltCard>
               </motion.div>
             );
           })}
@@ -731,8 +665,18 @@ export default function GithubProjects({
             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 cursor-pointer"
           >
             View All Projects
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 8l4 4m0 0l-4 4m4-4H3"
+              />
             </svg>
           </Link>
         </div>
@@ -742,7 +686,6 @@ export default function GithubProjects({
       {isModalOpen && selectedRepo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
           <div className="relative w-full max-w-4xl max-h-[90vh] bg-[#0b1329] border border-cyan-500/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-zinc-100">
-            
             {/* Close Button Floating Top-Right */}
             <button
               onClick={closeModal}
@@ -753,7 +696,6 @@ export default function GithubProjects({
 
             {/* Modal Body (Scrollable) */}
             <div className="p-6 sm:p-8 overflow-y-auto space-y-8 flex-1">
-              
               {/* Banner Image Preview */}
               {selectedRepo.bannerUrl && (
                 <div className="relative w-full h-64 sm:h-80 rounded-2xl overflow-hidden border border-cyan-500/20 bg-zinc-950">
@@ -778,7 +720,9 @@ export default function GithubProjects({
 
               {/* Main Technology Stack */}
               <div>
-                <h4 className="text-sm font-semibold text-white mb-3">Main Technology Stack</h4>
+                <h4 className="text-sm font-semibold text-white mb-3">
+                  Main Technology Stack
+                </h4>
                 <div className="flex flex-wrap gap-2">
                   {[
                     ...selectedRepo.techStack.frontend,
@@ -806,15 +750,20 @@ export default function GithubProjects({
 
               {/* Brief Description */}
               <div>
-                <h4 className="text-sm font-semibold text-white mb-2">Brief Description</h4>
+                <h4 className="text-sm font-semibold text-white mb-2">
+                  Brief Description
+                </h4>
                 <p className="text-zinc-300 text-sm leading-relaxed font-light">
-                  {selectedRepo.description || "No detailed description provided."}
+                  {selectedRepo.description ||
+                    "No detailed description provided."}
                 </p>
               </div>
 
               {/* Project Links Action Buttons */}
               <div>
-                <h4 className="text-sm font-semibold text-white mb-3">Project Links</h4>
+                <h4 className="text-sm font-semibold text-white mb-3">
+                  Project Links
+                </h4>
                 <div className="flex flex-wrap gap-3">
                   {selectedRepo.liveUrl && (
                     <a
@@ -838,40 +787,51 @@ export default function GithubProjects({
               </div>
 
               {/* Key Features / Highlights */}
-              {selectedRepo.keyFeatures && selectedRepo.keyFeatures.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold text-white mb-3">Key Features & Highlights</h4>
-                  <div className="space-y-2">
-                    {selectedRepo.keyFeatures.map((feature, i) => (
-                      <div key={i} className="flex items-start gap-2.5 text-xs text-zinc-300 leading-relaxed">
-                        <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 text-[10px] mt-0.5">
-                          ✓
-                        </span>
-                        <span>{feature}</span>
-                      </div>
-                    ))}
+              {selectedRepo.keyFeatures &&
+                selectedRepo.keyFeatures.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-3">
+                      Key Features & Highlights
+                    </h4>
+                    <div className="space-y-2">
+                      {selectedRepo.keyFeatures.map((feature, i) => (
+                        <div
+                          key={i}
+                          className="flex items-start gap-2.5 text-xs text-zinc-300 leading-relaxed"
+                        >
+                          <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 text-[10px] mt-0.5">
+                            ✓
+                          </span>
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Extracted Project Screenshots / Gallery */}
-              {selectedRepo.imagesInReadme && selectedRepo.imagesInReadme.length > 1 && (
-                <div>
-                  <h4 className="text-sm font-semibold text-white mb-4">Project Gallery & Screenshots</h4>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {selectedRepo.imagesInReadme.slice(1).map((imgUrl, i) => (
-                      <div key={i} className="relative rounded-2xl overflow-hidden border border-slate-800 bg-zinc-900 group">
-                        <img
-                          src={imgUrl}
-                          alt={`${selectedRepo.name} screenshot ${i + 1}`}
-                          className="w-full h-auto object-cover"
-                        />
-                      </div>
-                    ))}
+              {selectedRepo.imagesInReadme &&
+                selectedRepo.imagesInReadme.length > 1 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-4">
+                      Project Gallery & Screenshots
+                    </h4>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {selectedRepo.imagesInReadme.slice(1).map((imgUrl, i) => (
+                        <div
+                          key={i}
+                          className="relative rounded-2xl overflow-hidden border border-slate-800 bg-zinc-900 group"
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`${selectedRepo.name} screenshot ${i + 1}`}
+                            className="w-full h-auto object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-
+                )}
             </div>
           </div>
         </div>

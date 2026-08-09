@@ -10,8 +10,18 @@ const navLinks = [
     label: "Home",
     href: "/",
     icon: (
-      <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      <svg
+        className="w-4 h-4 text-blue-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+        />
       </svg>
     ),
   },
@@ -20,8 +30,18 @@ const navLinks = [
     label: "About",
     href: "/about",
     icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
       </svg>
     ),
   },
@@ -30,8 +50,18 @@ const navLinks = [
     label: "Skills",
     href: "/skill",
     icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+        />
       </svg>
     ),
   },
@@ -40,8 +70,18 @@ const navLinks = [
     label: "Projects",
     href: "/project",
     icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+        />
       </svg>
     ),
   },
@@ -51,8 +91,18 @@ const navLinks = [
     label: "Contact",
     href: "/contact",
     icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+        />
       </svg>
     ),
   },
@@ -63,7 +113,10 @@ interface NavbarProps {
   onSectionChange?: (section: string) => void;
 }
 
-export default function Navbar({ activeSection, onSectionChange }: NavbarProps) {
+export default function Navbar({
+  activeSection,
+  onSectionChange,
+}: NavbarProps) {
   const [internalActive, setInternalActive] = useState("home");
 
   const active = activeSection ?? internalActive;
@@ -77,9 +130,8 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
           {/* Logo (Top Left) */}
           <Link href="/" className="flex items-center group py-1 select-none">
             <span className="text-sm sm:text-base md:text-lg font-black tracking-[0.18em] uppercase italic transition-all duration-300 group-hover:scale-[1.02]">
-              <span className="text-zinc-100 font-extralight mr-1.5 not-italic tracking-[0.2em] text-xs sm:text-sm">MUHAMMAD</span>
-              <span className="bg-gradient-to-r from-white via-cyan-200 to-blue-400 bg-clip-text text-transparent group-hover:from-cyan-300 group-hover:via-blue-400 group-hover:to-indigo-300">
-                RIAD SHEKH
+              <span className="bg-linear-to-r from-white via-cyan-200 to-blue-400 bg-clip-text text-transparent group-hover:from-cyan-300 group-hover:via-blue-400 group-hover:to-indigo-300">
+                RIAD
               </span>
             </span>
           </Link>
@@ -98,9 +150,9 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
                   }
                 }}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
-                  active === link.id
-                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold"
-                    : "hover:text-zinc-200 hover:bg-zinc-800/60"
+                  active === link.id ?
+                    "bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold"
+                  : "hover:text-zinc-200 hover:bg-zinc-800/60"
                 }`}
               >
                 {link.icon}
@@ -140,9 +192,9 @@ export default function Navbar({ activeSection, onSectionChange }: NavbarProps) 
                 }}
                 aria-label={link.label}
                 className={`p-2.5 rounded-full transition-all cursor-pointer relative flex items-center justify-center ${
-                  isActive
-                    ? "bg-blue-600/25 text-blue-400 border border-blue-500/40 shadow-lg shadow-blue-500/20 scale-110"
-                    : "text-zinc-100 hover:text-zinc-200 hover:bg-zinc-800/50"
+                  isActive ?
+                    "bg-blue-600/25 text-blue-400 border border-blue-500/40 shadow-lg shadow-blue-500/20 scale-110"
+                  : "text-zinc-100 hover:text-zinc-200 hover:bg-zinc-800/50"
                 }`}
               >
                 <div className="w-5 h-5 flex items-center justify-center">

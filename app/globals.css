@@ -5,13 +5,44 @@
   html {
     scroll-behavior: smooth;
     color-scheme: dark;
-  
+
     color: #f4f4f5;
   }
-  
+
   ::selection {
-   
     color: #60a5fa;
+  }
+}
+
+/* Custom image cursor rule. Place your .cur/.png in `public/` and update
+   the path in `CustomCursor.tsx` (IMAGE_CURSOR_PATH) if you change the file.
+   Note: PNG cursors are supported in Chromium-based browsers; .cur is best
+   for cross-browser support (Firefox/IE/Edge). */
+.custom-cursor-active {
+  /* Fallback native image cursor (if used). JS cursor implementation
+     overlays a premium SVG pointer, so this is a low-priority fallback. */
+  cursor:
+    url("/riad.png") 16 16,
+    auto;
+}
+
+/* Premium cursor design tokens */
+:root {
+  --cursor-bg: #0b1320; /* dark graphite */
+  --cursor-glow: #22d3ee; /* cyan glow */
+  --cursor-blue: #3b82f6; /* blue accent */
+  --cursor-purple: #8b5cf6; /* purple accent */
+}
+
+/* Reduce motion gracefully */
+@media (prefers-reduced-motion: reduce) {
+  .custom-cursor-active {
+    transition: none !important;
+  }
+  .premium-cursor,
+  .premium-cursor * {
+    transition: none !important;
+    animation: none !important;
   }
 }
 
@@ -19,7 +50,6 @@
 ::-webkit-scrollbar {
   width: 8px;
 }
-
 
 ::-webkit-scrollbar-thumb {
   border-radius: 4px;
@@ -77,15 +107,22 @@
 .splash-grid {
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle, rgba(99, 102, 241, 0.12) 1px, transparent 1px);
+  background-image: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.12) 1px,
+    transparent 1px
+  );
   background-size: 40px 40px;
   animation: splashGridFade 1.6s ease forwards;
 }
 
 @keyframes splashGridFade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Ambient colour orbs */
@@ -101,7 +138,11 @@
   height: 500px;
   top: -100px;
   left: -100px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.18), transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.18),
+    transparent 70%
+  );
   animation-delay: 0s;
 }
 
@@ -110,7 +151,11 @@
   height: 400px;
   bottom: -80px;
   right: -80px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.15), transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.15),
+    transparent 70%
+  );
   animation-delay: 0.4s;
 }
 
@@ -119,13 +164,19 @@
   height: 300px;
   top: 40%;
   left: 55%;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.10), transparent 70%);
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.1), transparent 70%);
   animation-delay: 0.8s;
 }
 
 @keyframes splashOrbPulse {
-  from { transform: scale(1);    opacity: 0.7; }
-  to   { transform: scale(1.15); opacity: 1;   }
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.15);
+    opacity: 1;
+  }
 }
 
 /* Centre content wrapper */
@@ -139,8 +190,14 @@
 }
 
 @keyframes splashContentIn {
-  from { opacity: 0; transform: translateY(24px) scale(0.92); }
-  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Logo circle */
@@ -183,8 +240,12 @@
 }
 
 @keyframes splashRingSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Name */
@@ -224,6 +285,10 @@
 }
 
 @keyframes splashProgress {
-  from { width: 0%; }
-  to   { width: 100%; }
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
 }

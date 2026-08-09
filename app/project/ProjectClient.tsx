@@ -1,9 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import GithubProjects from "../components/GithubProjects";
-import FrameScrollAnimation from "../components/FrameScrollAnimation";
+
+const GithubProjects = dynamic(() => import("../components/GithubProjects"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const FrameScrollAnimation = dynamic(
+  () => import("../components/FrameScrollAnimation"),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
 
 export default function ProjectClient() {
   return (
@@ -15,6 +27,7 @@ export default function ProjectClient() {
         folderPath="/projectScrollAnimation"
         filePrefix="ezgif-frame-"
         fileExtension="png"
+        frameNumbers={Array.from({ length: 116 }, (_, index) => index + 1)}
       />
 
       <Navbar activeSection="projects" />

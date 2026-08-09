@@ -1,0 +1,936 @@
+   1: "use client";
+   2: 
+   3: import { useEffect, useRef, useState } from "react";
+   4: import { motion } from "framer-motion";
+   5: import Link from "next/link";
+   6: import { GithubRepo } from "../lib/github";
+   7: 
+   8: const repoCache = new Map<string, GithubRepo[]>();
+   9: const repoFetchPromises = new Map<string, Promise<GithubRepo[]>>();
+  10: 
+  11: interface GithubProjectsProps {
+  12:   username?: string;
+  13:   /** Cap the number of cards displayed (homepage preview) */
+  14:   maxItems?: number;
+  15:   /** Show the search input (default true) */
+  16:   showSearch?: boolean;
+  17: }
+  18: 
+  19: // ─── Category filter definitions ────────────────────────────────────────────
+  20: const CATEGORIES = [
+  21:   { id: "all", label: "All" },
+  22:   { id: "react", label: "React" },
+  23:   { id: "nextjs", label: "Next.js" },
+  24:   { id: "typescript", label: "TypeScript" },
+  25:   { id: "fullstack", label: "Full Stack" },
+  26:   { id: "3d", label: "3D / Canvas" },
+  27: ];
+  28: 
+  29: function getRepoCategories(repo: GithubRepo): string[] {
+  30:   const cats: string[] = ["all"];
+  31:   const ft = repo.techStack?.frontend ?? [];
+  32:   const bk = repo.techStack?.backend ?? [];
+  33:   const topics = repo.topics ?? [];
+  34: 
+  35:   if (ft.some((t) => /react/i.test(t))) cats.push("react");
+  36:   if (ft.some((t) => /next\.?js/i.test(t))) cats.push("nextjs");
+  37:   if (ft.some((t) => /typescript/i.test(t))) cats.push("typescript");
+  38:   if (ft.length > 0 && bk.length > 0) cats.push("fullstack");
+  39:   if (topics.some((t) => /3d|threejs|webgl|canvas/i.test(t))) cats.push("3d");
+  40: 
+  41:   return cats;
+  42: }
+  43: 
+  44: // ─── 3-D Tilt Card ──────────────────────────────────────────────────────────
+  45: function TiltCard({
+  46:   children,
+  47:   className,
+  48: }: {
+  49:   children: React.ReactNode;
+  50:   className?: string;
+  51: }) {
+  52:   const ref = useRef<HTMLDivElement>(null);
+  53:   const rectRef = useRef<DOMRect | null>(null);
+  54: 
+  55:   const updateRect = () => {
+  56:     if (ref.current) {
+  57:       rectRef.current = ref.current.getBoundingClientRect();
+  58:     }
+  59:   };
+  60: 
+  61:   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  62:     const el = ref.current;
+  63:     if (!el) return;
+  64:     let rect = rectRef.current;
+  65:     if (!rect) {
+  66:       rect = el.getBoundingClientRect();
+  67:       rectRef.current = rect;
+  68:     }
+  69:     const x = (e.clientX - rect.left) / rect.width - 0.5;
+  70:     const y = (e.clientY - rect.top) / rect.height - 0.5;
+  71:     el.style.transition = "transform 0.08s linear";
+  72:     el.style.transform = `perspective(900px) rotateY(${x * 24}deg) rotateX(${-y * 24}deg) scale3d(1.03,1.03,1.03)`;
+  73:     const glint = el.querySelector<HTMLElement>(".tilt-glint");
+  74:     if (glint) {
+  75:       glint.style.background = `radial-gradient(circle at ${(x + 0.5) * 100}% ${(y + 0.5) * 100}%, rgba(255,255,255,0.12) 0%, transparent 65%)`;
+  76:       glint.style.opacity = "1";
+  77:     }
+  78:   };
+  79: 
+  80:   const onLeave = () => {
+  81:     const el = ref.current;
+  82:     if (!el) return;
+  83:     el.style.transition = "transform 0.55s cubic-bezier(.23,1,.32,1)";
+  84:     el.style.transform =
+  85:       "perspective(900px) rotateY(0deg) rotateX(0deg) scale3d(1,1,1)";
+  86:     const glint = el.querySelector<HTMLElement>(".tilt-glint");
+  87:     if (glint) glint.style.opacity = "0";
+  88:   };
+  89: 
+  90:   return (
+  91:     <div
+  92:       ref={ref}
+  93:       onMouseMove={onMove}
+  94:       onMouseLeave={onLeave}
+  95:       className={className}
+  96:       style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+  97:     >
+  98:       {/* glint layer — sits on top, pointer-events:none */}
+  99:       <div
+ 100:         className="tilt-glint absolute inset-0 rounded-3xl pointer-events-none z-10"
+ 101:         style={{ opacity: 0, transition: "opacity 0.2s" }}
+ 102:       />
+ 103:       {children}
+ 104:     </div>
+ 105:   );
+ 106: }
+ 107: 
+ 108: export default function GithubProjects({
+ 109:   username = "riadswebdev",
+ 110:   maxItems,
+ 111:   showSearch = true,
+ 112: }: GithubProjectsProps) {
+ 113:   const [repos, setRepos] = useState<GithubRepo[]>([]);
+ 114:   const [loading, setLoading] = useState<boolean>(true);
+ 115:   const [error, setError] = useState<string | null>(null);
+ 116:   const [selectedRepo, setSelectedRepo] = useState<GithubRepo | null>(null);
+ 117:   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+ 118:   const [searchQuery, setSearchQuery] = useState<string>("");
+ 119:   const [selectedTopic, setSelectedTopic] = useState<string>("all");
+ 120:   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+ 121:   const abortControllerRef = useRef<AbortController | null>(null);
+ 122: 
+ 123:   // Parses Markdown sections from README
+ 124:   const parseReadmeSections = (
+ 125:     readmeText: string,
+ 126:     topics: string[] = [],
+ 127:     language: string | null = null,
+ 128:   ) => {
+ 129:     const combinedText = `${readmeText} ${topics.join(" ")} ${language || ""}`;
+ 130: 
+ 131:     // 1. Tech Stack Extraction
+ 132:     const extractMatches = (keywords: string[]) => {
+ 133:       const matched = new Set<string>();
+ 134:       keywords.forEach((keyword) => {
+ 135:         const regex = new RegExp(
+ 136:           `\\b${keyword.replace(".", "\\.").replace("+", "\\+")}\\b`,
+ 137:           "i",
+ 138:         );
+ 139:         if (regex.test(combinedText)) {
+ 140:           matched.add(keyword);
+ 141:         }
+ 142:       });
+ 143:       return Array.from(matched);
+ 144:     };
+ 145: 
+ 146:     // Deduplication: remove any entry that is a case-insensitive substring of
+ 147:     // another entry in the same combined set (keeps the most specific term).
+ 148:     const deduplicateTech = (items: string[]): string[] => {
+ 149:       const all = [...items];
+ 150:       return all.filter((item) => {
+ 151:         const itemLower = item.toLowerCase();
+ 152:         return !all.some(
+ 153:           (other) =>
+ 154:             other !== item &&
+ 155:             other.toLowerCase().includes(itemLower) &&
+ 156:             other.length > item.length,
+ 157:         );
+ 158:       });
+ 159:     };
+ 160: 
+ 161:     const rawTechStack: ParsedTechStack = {
+ 162:       frontend: extractMatches(TECH_DICTIONARY.frontend),
+ 163:       backend: extractMatches(TECH_DICTIONARY.backend),
+ 164:       database: extractMatches(TECH_DICTIONARY.database),
+ 165:       devTools: extractMatches(TECH_DICTIONARY.devTools),
+ 166:     };
+ 167: 
+ 168:     // Run deduplication across all categories together so cross-category
+ 169:     // duplicates (e.g. "React" vs "React 19") are also handled.
+ 170:     const allRaw = [
+ 171:       ...rawTechStack.frontend,
+ 172:       ...rawTechStack.backend,
+ 173:       ...rawTechStack.database,
+ 174:       ...rawTechStack.devTools,
+ 175:     ];
+ 176:     const dedupedAll = deduplicateTech(allRaw);
+ 177: 
+ 178:     const techStack: ParsedTechStack = {
+ 179:       frontend: rawTechStack.frontend.filter((t) => dedupedAll.includes(t)),
+ 180:       backend: rawTechStack.backend.filter((t) => dedupedAll.includes(t)),
+ 181:       database: rawTechStack.database.filter((t) => dedupedAll.includes(t)),
+ 182:       devTools: rawTechStack.devTools.filter((t) => dedupedAll.includes(t)),
+ 183:     };
+ 184: 
+ 185:     // Extract Live Demo Link
+ 186:     let liveUrl: string | null = null;
+ 187:     if (readmeText) {
+ 188:       const liveLinkMatch =
+ 189:         /Live Website.*?\]\((https?:\/\/[^\s\)]+)\)/i.exec(readmeText) ||
+ 190:         /\[(?:Live Demo|Live Site|Website)\]\((https?:\/\/[^\s\)]+)\)/i.exec(
+ 191:           readmeText,
+ 192:         ) ||
+ 193:         /https?:\/\/[a-zA-Z0-9-]+\.vercel\.app[^\s\)]*/i.exec(readmeText);
+ 194:       if (liveLinkMatch) {
+ 195:         liveUrl = liveLinkMatch[1] || liveLinkMatch[0];
+ 196:       }
+ 197:     }
+ 198: 
+ 199:     // 2. Key Features Extraction from README "## Key Features" section
+ 200:     const keyFeatures: string[] = [];
+ 201:     let extractedOverview: string | null = null;
+ 202: 
+ 203:     if (readmeText) {
+ 204:       // Extract Overview section (## Overview) or top intro paragraph
+ 205:       const overviewSectionRegex = /##\s*.*?Overview([\s\S]*?)(?=##|\n---|$)/i;
+ 206:       const overviewMatch = overviewSectionRegex.exec(readmeText);
+ 207: 
+ 208:       if (overviewMatch && overviewMatch[1]) {
+ 209:         const textBlock = overviewMatch[1]
+ 210:           .split("\n")
+ 211:           .map((line) => line.trim())
+ 212:           .filter(
+ 213:             (line) =>
+ 214:               line.length > 0 &&
+ 215:               !line.startsWith("#") &&
+ 216:               !line.startsWith("-") &&
+ 217:               !line.startsWith("!["),
+ 218:           )
+ 219:           .join(" ");
+ 220: 
+ 221:         if (textBlock.length > 0) {
+ 222:           const sentences = textBlock.match(/[^.!?]+[.!?]+/g) || [textBlock];
+ 223:           extractedOverview = sentences.slice(0, 2).join(" ").trim();
+ 224:         }
+ 225:       }
+ 226: 
+ 227:       // Fallback: If no explicit Overview heading exists, extract first non-heading, non-image text paragraph
+ 228:       if (!extractedOverview) {
+ 229:         const paragraphs = readmeText
+ 230:           .split("\n\n")
+ 231:           .map((p) => p.trim())
+ 232:           .filter(
+ 233:             (p) =>
+ 234:               p.length > 20 &&
+ 235:               !p.startsWith("#") &&
+ 236:               !p.startsWith("![") &&
+ 237:               !p.startsWith("<") &&
+ 238:               !p.startsWith("-") &&
+ 239:               !p.startsWith("*"),
+ 240:           );
+ 241: 
+ 242:         if (paragraphs.length > 0) {
+ 243:           const sentences = paragraphs[0].match(/[^.!?]+[.!?]+/g) || [
+ 244:             paragraphs[0],
+ 245:           ];
+ 246:           extractedOverview = sentences.slice(0, 2).join(" ").trim();
+ 247:         }
+ 248:       }
+ 249: 
+ 250:       // Extract Key Features
+ 251:       const featuresSectionRegex =
+ 252:         /##\s*.*?Key Features([\s\S]*?)(?=##|\n---|$)/i;
+ 253:       const match = featuresSectionRegex.exec(readmeText);
+ 254:       if (match && match[1]) {
+ 255:         const lines = match[1].split("\n");
+ 256:         lines.forEach((line) => {
+ 257:           const trimmed = line.trim();
+ 258:           if (
+ 259:             trimmed.startsWith("- ") ||
+ 260:             trimmed.startsWith("* ") ||
+ 261:             trimmed.startsWith("### ")
+ 262:           ) {
+ 263:             const cleanLine = trimmed
+ 264:               .replace(/^[-*#]+\s*/, "")
+ 265:               .replace(/[*_~]/g, "")
+ 266:               .trim();
+ 267:             if (cleanLine.length > 5 && !keyFeatures.includes(cleanLine)) {
+ 268:               keyFeatures.push(cleanLine);
+ 269:             }
+ 270:           }
+ 271:         });
+ 272:       }
+ 273:     }
+ 274: 
+ 275:     return { techStack, keyFeatures, extractedOverview, liveUrl };
+ 276:   };
+ 277: 
+ 278:   useEffect(() => {
+ 279:     async function fetchReposAndDetails() {
+ 280:       try {
+ 281:         setLoading(true);
+ 282:         setError(null);
+ 283: 
+ 284:         // Include Personal Access Token if defined to prevent 403 Rate Limit errors
+ 285:         const headers: Record<string, string> = {
+ 286:           Accept: "application/vnd.github.v3+json",
+ 287:         };
+ 288:         const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
+ 289:         if (token && token.trim() !== "") {
+ 290:           headers["Authorization"] = `token ${token.trim()}`;
+ 291:         }
+ 292: 
+ 293:         // Fetch user repositories from GitHub API
+ 294:         const response = await fetch(
+ 295:           `https://api.github.com/users/${username}/repos?sort=updated&per_page=30`,
+ 296:           { headers },
+ 297:         );
+ 298: 
+ 299:         if (response.status === 403) {
+ 300:           throw new Error(
+ 301:             "GitHub API Rate Limit exceeded (403). Add NEXT_PUBLIC_GITHUB_TOKEN in .env.local to resolve.",
+ 302:           );
+ 303:         }
+ 304: 
+ 305:         if (!response.ok) {
+ 306:           throw new Error(`GitHub API returned status ${response.status}`);
+ 307:         }
+ 308:         const data: any[] = await response.json();
+ 309: 
+ 310:         // Filter non-fork repositories
+ 311:         const nonForkRepos = data.filter((repo) => !repo.fork);
+ 312: 
+ 313:         // Fetch README details for each repo in parallel
+ 314:         const enrichedRepos = await Promise.all(
+ 315:           nonForkRepos.map(async (repo) => {
+ 316:             let bannerUrl: string | null = null;
+ 317:             let readmeContent: string | null = null;
+ 318:             let imagesInReadme: string[] = [];
+ 319:             let techStack: ParsedTechStack = {
+ 320:               frontend: [],
+ 321:               backend: [],
+ 322:               database: [],
+ 323:               devTools: [],
+ 324:             };
+ 325:             let keyFeatures: string[] = [];
+ 326: 
+ 327:             try {
+ 328:               // Try fetching raw README file (checking README.md, readme.md, Readme.md)
+ 329:               const readmeVariants = ["README.md", "readme.md", "Readme.md"];
+ 330:               for (const variant of readmeVariants) {
+ 331:                 const readmeRes = await fetch(
+ 332:                   `https://raw.githubusercontent.com/${repo.full_name}/${repo.default_branch || "main"}/${variant}`,
+ 333:                 );
+ 334:                 if (readmeRes.ok) {
+ 335:                   readmeContent = await readmeRes.text();
+ 336:                   break;
+ 337:                 }
+ 338:               }
+ 339: 
+ 340:               // Fallback to GitHub Contents API if raw raw.githubusercontent fetch failed
+ 341:               if (!readmeContent) {
+ 342:                 const apiReadmeRes = await fetch(
+ 343:                   `https://api.github.com/repos/${repo.full_name}/readme`,
+ 344:                   { headers },
+ 345:                 );
+ 346:                 if (apiReadmeRes.ok) {
+ 347:                   const readmeJson = await apiReadmeRes.json();
+ 348:                   if (readmeJson.content) {
+ 349:                     readmeContent = atob(readmeJson.content.replace(/\s/g, ""));
+ 350:                   }
+ 351:                 }
+ 352:               }
+ 353: 
+ 354:               if (readmeContent) {
+ 355:                 // Extract images using regex (Markdown & HTML img tags)
+ 356:                 const mdImageRegex =
+ 357:                   /!\[.*?\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+|\.\/[^\s\)]+|[^\s\)]+)\)/g;
+ 358:                 const htmlImageRegex =
+ 359:                   /<img[^>]+src=["'](https?:\/\/[^"']+|\/[^"']+|\.\/[^"']+|[^"']+)["']/g;
+ 360: 
+ 361:                 const extracted: string[] = [];
+ 362:                 let match;
+ 363: 
+ 364:                 const cleanImagePath = (pathStr: string) => {
+ 365:                   let cleaned = pathStr.trim();
+ 366:                   if (cleaned.startsWith("./")) cleaned = cleaned.substring(2);
+ 367:                   if (cleaned.startsWith("/")) cleaned = cleaned.substring(1);
+ 368:                   if (!cleaned.startsWith("http")) {
+ 369:                     cleaned = `https://raw.githubusercontent.com/${repo.full_name}/${repo.default_branch || "main"}/${cleaned}`;
+ 370:                   }
+ 371:                   return cleaned;
+ 372:                 };
+ 373: 
+ 374:                 while ((match = mdImageRegex.exec(readmeContent)) !== null) {
+ 375:                   extracted.push(cleanImagePath(match[1]));
+ 376:                 }
+ 377: 
+ 378:                 while ((match = htmlImageRegex.exec(readmeContent)) !== null) {
+ 379:                   extracted.push(cleanImagePath(match[1]));
+ 380:                 }
+ 381: 
+ 382:                 imagesInReadme = Array.from(new Set(extracted));
+ 383:                 if (imagesInReadme.length > 0) {
+ 384:                   bannerUrl = imagesInReadme[0];
+ 385:                 }
+ 386:               }
+ 387:             } catch (err) {
+ 388:               console.warn(`Could not fetch README for ${repo.name}:`, err);
+ 389:             }
+ 390: 
+ 391:             // Parse Tech Stack, Overview Summary & Key Features directly from README content
+ 392:             const parsedData = parseReadmeSections(
+ 393:               readmeContent || "",
+ 394:               repo.topics || [],
+ 395:               repo.language,
+ 396:             );
+ 397:             techStack = parsedData.techStack;
+ 398:             keyFeatures = parsedData.keyFeatures;
+ 399:             const liveUrl = parsedData.liveUrl || repo.html_url;
+ 400: 
+ 401:             // Use extracted Overview section sentences as repo description if repo.description is null/empty
+ 402:             const description =
+ 403:               parsedData.extractedOverview || repo.description || null;
+ 404: 
+ 405:             return {
+ 406:               ...repo,
+ 407:               description,
+ 408:               bannerUrl,
+ 409:               readmeContent,
+ 410:               imagesInReadme,
+ 411:               techStack,
+ 412:               keyFeatures,
+ 413:               liveUrl,
+ 414:             } as GithubRepo;
+ 415:           }),
+ 416:         );
+ 417: 
+ 418:         // Filter to include only repositories that have a valid README.md file
+ 419:         const reposWithReadme = enrichedRepos.filter(
+ 420:           (repo) => repo.readmeContent && repo.readmeContent.trim().length > 0,
+ 421:         );
+ 422: 
+ 423:         setRepos(reposWithReadme);
+ 424:       } catch (err: any) {
+ 425:         setError(err.message || "Failed to load GitHub repositories.");
+ 426:       } finally {
+ 427:         setLoading(false);
+ 428:       }
+ 429:     }
+ 430: 
+ 431:     fetchReposAndDetails();
+ 432:   }, [username]);
+ 433: 
+ 434:   // Extract all unique topics/tags across repos
+ 435:   const allTopics = Array.from(
+ 436:     new Set(repos.flatMap((repo) => repo.topics || [])),
+ 437:   );
+ 438: 
+ 439:   // Which categories actually have repos (to show/hide buttons dynamically)
+ 440:   const availableCategories = CATEGORIES.filter(
+ 441:     (cat) =>
+ 442:       cat.id === "all" ||
+ 443:       repos.some((r) => getRepoCategories(r).includes(cat.id)),
+ 444:   );
+ 445: 
+ 446:   // Filter repos based on search, topic, and category
+ 447:   const filteredRepos = repos.filter((repo) => {
+ 448:     const matchesSearch =
+ 449:       repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+ 450:       (repo.description &&
+ 451:         repo.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+ 452:       (repo.language &&
+ 453:         repo.language.toLowerCase().includes(searchQuery.toLowerCase()));
+ 454: 
+ 455:     const matchesTopic =
+ 456:       selectedTopic === "all" ||
+ 457:       (repo.topics && repo.topics.includes(selectedTopic));
+ 458: 
+ 459:     const matchesCategory =
+ 460:       selectedCategory === "all" ||
+ 461:       getRepoCategories(repo).includes(selectedCategory);
+ 462: 
+ 463:     return matchesSearch && matchesTopic && matchesCategory;
+ 464:   });
+ 465: 
+ 466:   const openModal = (repo: GithubRepo) => {
+ 467:     setSelectedRepo(repo);
+ 468:     setIsModalOpen(true);
+ 469:     document.body.style.overflow = "hidden";
+ 470:   };
+ 471: 
+ 472:   const closeModal = () => {
+ 473:     setIsModalOpen(false);
+ 474:     setSelectedRepo(null);
+ 475:     document.body.style.overflow = "auto";
+ 476:   };
+ 477: 
+ 478:   // Apply maxItems cap after filtering
+ 479:   const displayedRepos =
+ 480:     maxItems ? filteredRepos.slice(0, maxItems) : filteredRepos;
+ 481:   const hasMore = maxItems ? filteredRepos.length > maxItems : false;
+ 482: 
+ 483:   return (
+ 484:     <section id="projects" className="pb-10 px-6 max-w-7xl mx-auto">
+ 485:       {/* Header */}
+ 486:       <motion.div
+ 487:         initial={{ opacity: 0, y: 28 }}
+ 488:         whileInView={{ opacity: 1, y: 0 }}
+ 489:         viewport={{ once: false, margin: "-80px" }}
+ 490:         transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+ 491:         className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6"
+ 492:       >
+ 493:         <div className="space-y-2">
+ 494:           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-mono text-blue-400">
+ 495:             <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+ 496:             Live GitHub API Integration
+ 497:           </div>
+ 498:           <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+ 499:             GitHub Portfolio Projects
+ 500:           </h2>
+ 501:         </div>
+ 502: 
+ 503:         {/* Search — hidden on homepage preview */}
+ 504:         {showSearch && (
+ 505:           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+ 506:             <div className="relative">
+ 507:               <input
+ 508:                 type="text"
+ 509:                 placeholder="Search projects..."
+ 510:                 value={searchQuery}
+ 511:                 onChange={(e) => setSearchQuery(e.target.value)}
+ 512:                 className="w-full sm:w-64 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-colors"
+ 513:               />
+ 514:               {searchQuery && (
+ 515:                 <button
+ 516:                   onClick={() => setSearchQuery("")}
+ 517:                   className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-100 hover:text-white text-xs cursor-pointer"
+ 518:                 >
+ 519:                   ✕
+ 520:                 </button>
+ 521:               )}
+ 522:             </div>
+ 523:           </div>
+ 524:         )}
+ 525:       </motion.div>
+ 526: 
+ 527:       {/* ── Category Filter Bar ─────────────────────────────────────── */}
+ 528:       <div className="flex flex-wrap items-center gap-2 mb-5">
+ 529:         {availableCategories.map((cat) => (
+ 530:           <button
+ 531:             key={cat.id}
+ 532:             onClick={() => {
+ 533:               setSelectedCategory(cat.id);
+ 534:               setSelectedTopic("all");
+ 535:             }}
+ 536:             className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
+ 537:               selectedCategory === cat.id ?
+ 538:                 "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-cyan-500/30 scale-105"
+ 539:               : "bg-zinc-900/60 border border-zinc-800 text-zinc-100 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/60"
+ 540:             }`}
+ 541:           >
+ 542:             {cat.label}
+ 543:             {cat.id === "all" && (
+ 544:               <span className="ml-1.5 opacity-60">({repos.length})</span>
+ 545:             )}
+ 546:           </button>
+ 547:         ))}
+ 548:       </div>
+ 549: 
+ 550:       {/* ── Topic Pills (secondary filter) ─────────────────────────── */}
+ 551:       {allTopics.length > 0 && (
+ 552:         <div className="flex flex-wrap items-center gap-2 mb-10 pb-2 overflow-x-auto scrollbar-none">
+ 553:           <button
+ 554:             onClick={() => setSelectedTopic("all")}
+ 555:             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+ 556:               selectedTopic === "all" ?
+ 557:                 "bg-zinc-700 text-white"
+ 558:               : "bg-zinc-900/60 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+ 559:             }`}
+ 560:           >
+ 561:             All Topics
+ 562:           </button>
+ 563:           {allTopics.map((topic) => (
+ 564:             <button
+ 565:               key={topic}
+ 566:               onClick={() => setSelectedTopic(topic)}
+ 567:               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+ 568:                 selectedTopic === topic ?
+ 569:                   "bg-zinc-700 text-white"
+ 570:                 : "bg-zinc-900/60 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+ 571:               }`}
+ 572:             >
+ 573:               #{topic}
+ 574:             </button>
+ 575:           ))}
+ 576:         </div>
+ 577:       )}
+ 578: 
+ 579:       {/* Loading state: Card-level skeleton loading spinner with semi-transparent background */}
+ 580:       {loading && (
+ 581:         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+ 582:           {Array.from({ length: maxItems || 6 }).map((_, idx) => (
+ 583:             <div
+ 584:               key={idx}
+ 585:               className="relative p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 backdrop-blur-sm shadow-xl flex flex-col justify-between h-[420px] overflow-hidden"
+ 586:             >
+ 587:               <div>
+ 588:                 {/* Skeleton Banner with Embedded Dual-Ring Spinner */}
+ 589:                 <div className="relative w-full h-48 rounded-2xl bg-zinc-950/60 border border-zinc-800/50 overflow-hidden mb-5 flex items-center justify-center">
+ 590:                   {/* Glassmorphic Shimmer Overlay */}
+ 591:                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent animate-pulse" />
+ 592: 
+ 593:                   {/* Card Loading Spinner */}
+ 594:                   <div className="relative flex items-center justify-center">
+ 595:                     <div className="w-10 h-10 border-2 border-blue-500/20 border-t-blue-400 border-r-cyan-400 rounded-full animate-spin" />
+ 596:                     <div className="absolute w-3 h-3 rounded-full bg-blue-500/30 animate-ping" />
+ 597:                   </div>
+ 598:                 </div>
+ 599: 
+ 600:                 {/* Title & Description Skeleton */}
+ 601:                 <div className="space-y-3">
+ 602:                   <div className="h-6 bg-zinc-800/50 rounded-lg w-2/3 animate-pulse" />
+ 603:                   <div className="space-y-2 pt-1">
+ 604:                     <div className="h-3.5 bg-zinc-800/40 rounded w-full animate-pulse" />
+ 605:                     <div className="h-3.5 bg-zinc-800/40 rounded w-4/5 animate-pulse" />
+ 606:                   </div>
+ 607:                 </div>
+ 608:               </div>
+ 609: 
+ 610:               {/* Card Action Footer Skeleton */}
+ 611:               <div className="pt-4 border-t border-zinc-800/60 flex items-center justify-between">
+ 612:                 <div className="h-4 bg-cyan-500/20 rounded-md w-20 animate-pulse" />
+ 613:                 <div className="h-8 bg-zinc-800/60 rounded-xl w-28 animate-pulse" />
+ 614:               </div>
+ 615:             </div>
+ 616:           ))}
+ 617:         </div>
+ 618:       )}
+ 619: 
+ 620:       {/* Error State */}
+ 621:       {!loading && error && (
+ 622:         <div className="p-8 rounded-3xl bg-red-950/20 border border-red-900/40 text-center max-w-md mx-auto my-12 space-y-4">
+ 623:           <p className="text-red-400 text-sm font-medium leading-relaxed">
+ 624:             {error}
+ 625:           </p>
+ 626:           <div className="flex justify-center gap-3">
+ 627:             <button
+ 628:               onClick={() => window.location.reload()}
+ 629:               className="px-5 py-2 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-500 transition-colors cursor-pointer"
+ 630:             >
+ 631:               Retry
+ 632:             </button>
+ 633:           </div>
+ 634:         </div>
+ 635:       )}
+ 636: 
+ 637:       {/* Empty State */}
+ 638:       {!loading && !error && filteredRepos.length === 0 && (
+ 639:         <div className="p-12 text-center border border-dashed border-zinc-800 rounded-3xl max-w-lg mx-auto">
+ 640:           <p className="text-zinc-100 text-sm">
+ 641:             No repositories found matching your filters.
+ 642:           </p>
+ 643:           <button
+ 644:             onClick={() => {
+ 645:               setSearchQuery("");
+ 646:               setSelectedTopic("all");
+ 647:               setSelectedCategory("all");
+ 648:             }}
+ 649:             className="mt-4 px-4 py-2 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white text-xs font-medium transition-colors cursor-pointer"
+ 650:           >
+ 651:             Reset Filters
+ 652:           </button>
+ 653:         </div>
+ 654:       )}
+ 655: 
+ 656:       {/* Repo Cards Grid */}
+ 657:       {!loading && !error && displayedRepos.length > 0 && (
+ 658:         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+ 659:           {displayedRepos.map((repo, index) => {
+ 660:             return (
+ 661:               <motion.div
+ 662:                 key={repo.id}
+ 663:                 initial={{ opacity: 0, y: 48 }}
+ 664:                 whileInView={{ opacity: 1, y: 0 }}
+ 665:                 viewport={{ once: false, margin: "-60px 0px -60px 0px" }}
+ 666:                 transition={{
+ 667:                   duration: 0.52,
+ 668:                   delay: (index % 3) * 0.1,
+ 669:                   ease: [0.22, 1, 0.36, 1],
+ 670:                 }}
+ 671:               >
+ 672:                 <TiltCard className="relative group p-6 rounded-3xl bg-[#060a12]/60 backdrop-blur-md border border-white/10 hover:border-cyan-500/40 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between overflow-hidden h-full">
+ 673:                   <div>
+ 674:                     {/* Banner image or preview fallback */}
+ 675:                     <div className="relative w-full h-48 rounded-2xl bg-zinc-950 overflow-hidden mb-5 border border-zinc-800/60 flex items-center justify-center">
+ 676:                       {repo.bannerUrl ?
+ 677:                         <img
+ 678:                           src={repo.bannerUrl}
+ 679:                           alt={repo.name}
+ 680:                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+ 681:                           onError={(e) => {
+ 682:                             (e.target as HTMLElement).style.display = "none";
+ 683:                           }}
+ 684:                         />
+ 685:                       : <div className="p-6 text-center space-y-2">
+ 686:                           <span className="text-4xl">⚡</span>
+ 687:                           <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+ 688:                             {repo.language || "Code Repository"}
+ 689:                           </p>
+ 690:                         </div>
+ 691:                       }
+ 692:                       {/* Repo Stats Badge */}
+ 693:                       <div className="absolute top-3 right-3 flex items-center gap-2 px-2.5 py-1 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800 text-[11px] font-mono text-zinc-300">
+ 694:                         <span className="flex items-center gap-1 text-amber-400">
+ 695:                           ★ {repo.stargazers_count}
+ 696:                         </span>
+ 697:                         <span className="text-zinc-600">•</span>
+ 698:                         <span className="flex items-center gap-1 text-blue-400">
+ 699:                           🔀 {repo.forks_count}
+ 700:                         </span>
+ 701:                       </div>
+ 702:                     </div>
+ 703: 
+ 704:                     {/* Title & Description Only */}
+ 705:                     <div className="space-y-2 mb-6">
+ 706:                       <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors truncate">
+ 707:                         {repo.name}
+ 708:                       </h3>
+ 709: 
+ 710:                       <p className="text-zinc-100 text-xs leading-relaxed font-light line-clamp-3">
+ 711:                         {repo.description ||
+ 712:                           "No description provided for this GitHub repository."}
+ 713:                       </p>
+ 714:                     </div>
+ 715:                   </div>
+ 716: 
+ 717:                   {/* Card Footer Action */}
+ 718:                   <div className="pt-4 border-t border-zinc-800/60 flex items-center justify-between">
+ 719:                     <a
+ 720:                       href={repo.liveUrl || repo.html_url}
+ 721:                       target="_blank"
+ 722:                       rel="noopener noreferrer"
+ 723:                       className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 transition-colors"
+ 724:                     >
+ 725:                       Live Demo ↗
+ 726:                     </a>
+ 727: 
+ 728:                     <button
+ 729:                       onClick={() => openModal(repo)}
+ 730:                       className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+ 731:                     >
+ 732:                       View Details
+ 733:                       <svg
+ 734:                         className="w-3.5 h-3.5"
+ 735:                         fill="none"
+ 736:                         viewBox="0 0 24 24"
+ 737:                         stroke="currentColor"
+ 738:                       >
+ 739:                         <path
+ 740:                           strokeLinecap="round"
+ 741:                           strokeLinejoin="round"
+ 742:                           strokeWidth={2}
+ 743:                           d="M9 5l7 7-7 7"
+ 744:                         />
+ 745:                       </svg>
+ 746:                     </button>
+ 747:                   </div>
+ 748:                 </TiltCard>
+ 749:               </motion.div>
+ 750:             );
+ 751:           })}
+ 752:         </div>
+ 753:       )}
+ 754: 
+ 755:       {/* View All Projects CTA — only shown on homepage when capped */}
+ 756:       {!loading && !error && hasMore && (
+ 757:         <div className="mt-12 flex justify-center">
+ 758:           <Link
+ 759:             href="/project"
+ 760:             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 cursor-pointer"
+ 761:           >
+ 762:             View All Projects
+ 763:             <svg
+ 764:               className="w-4 h-4"
+ 765:               fill="none"
+ 766:               viewBox="0 0 24 24"
+ 767:               stroke="currentColor"
+ 768:             >
+ 769:               <path
+ 770:                 strokeLinecap="round"
+ 771:                 strokeLinejoin="round"
+ 772:                 strokeWidth={2}
+ 773:                 d="M17 8l4 4m0 0l-4 4m4-4H3"
+ 774:               />
+ 775:             </svg>
+ 776:           </Link>
+ 777:         </div>
+ 778:       )}
+ 779: 
+ 780:       {/* Details Modal - Styled after reference mockup */}
+ 781:       {isModalOpen && selectedRepo && (
+ 782:         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+ 783:           <div className="relative w-full max-w-4xl max-h-[90vh] bg-[#0b1329] border border-cyan-500/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-zinc-100">
+ 784:             {/* Close Button Floating Top-Right */}
+ 785:             <button
+ 786:               onClick={closeModal}
+ 787:               className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white hover:bg-black transition-colors cursor-pointer"
+ 788:             >
+ 789:               ✕
+ 790:             </button>
+ 791: 
+ 792:             {/* Modal Body (Scrollable) */}
+ 793:             <div className="p-6 sm:p-8 overflow-y-auto space-y-8 flex-1">
+ 794:               {/* Banner Image Preview */}
+ 795:               {selectedRepo.bannerUrl && (
+ 796:                 <div className="relative w-full h-64 sm:h-80 rounded-2xl overflow-hidden border border-cyan-500/20 bg-zinc-950">
+ 797:                   <img
+ 798:                     src={selectedRepo.bannerUrl}
+ 799:                     alt={selectedRepo.name}
+ 800:                     className="w-full h-full object-cover"
+ 801:                   />
+ 802:                   <div className="absolute inset-0 bg-gradient-to-t from-[#0b1329] via-transparent to-transparent opacity-80" />
+ 803:                 </div>
+ 804:               )}
+ 805: 
+ 806:               {/* Title & Badge */}
+ 807:               <div className="space-y-3">
+ 808:                 <h3 className="text-3xl font-extrabold text-white tracking-tight">
+ 809:                   {selectedRepo.name}
+ 810:                 </h3>
+ 811:                 <div className="inline-flex items-center px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-xs font-mono text-cyan-400">
+ 812:                   Full Stack Project
+ 813:                 </div>
+ 814:               </div>
+ 815: 
+ 816:               {/* Main Technology Stack */}
+ 817:               <div>
+ 818:                 <h4 className="text-sm font-semibold text-white mb-3">
+ 819:                   Main Technology Stack
+ 820:                 </h4>
+ 821:                 <div className="flex flex-wrap gap-2">
+ 822:                   {[
+ 823:                     ...selectedRepo.techStack.frontend,
+ 824:                     ...selectedRepo.techStack.backend,
+ 825:                     ...selectedRepo.techStack.database,
+ 826:                     ...selectedRepo.techStack.devTools,
+ 827:                   ].map((tech, idx) => (
+ 828:                     <span
+ 829:                       key={idx}
+ 830:                       className="px-3.5 py-1.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs font-mono text-cyan-300"
+ 831:                     >
+ 832:                       {tech}
+ 833:                     </span>
+ 834:                   ))}
+ 835:                   {selectedRepo.techStack.frontend.length === 0 &&
+ 836:                     selectedRepo.techStack.backend.length === 0 &&
+ 837:                     selectedRepo.techStack.database.length === 0 &&
+ 838:                     selectedRepo.language && (
+ 839:                       <span className="px-3 py-1 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs font-mono text-cyan-300">
+ 840:                         {selectedRepo.language}
+ 841:                       </span>
+ 842:                     )}
+ 843:                 </div>
+ 844:               </div>
+ 845: 
+ 846:               {/* Brief Description */}
+ 847:               <div>
+ 848:                 <h4 className="text-sm font-semibold text-white mb-2">
+ 849:                   Brief Description
+ 850:                 </h4>
+ 851:                 <p className="text-zinc-300 text-sm leading-relaxed font-light">
+ 852:                   {selectedRepo.description ||
+ 853:                     "No detailed description provided."}
+ 854:                 </p>
+ 855:               </div>
+ 856: 
+ 857:               {/* Project Links Action Buttons */}
+ 858:               <div>
+ 859:                 <h4 className="text-sm font-semibold text-white mb-3">
+ 860:                   Project Links
+ 861:                 </h4>
+ 862:                 <div className="flex flex-wrap gap-3">
+ 863:                   {selectedRepo.liveUrl && (
+ 864:                     <a
+ 865:                       href={selectedRepo.liveUrl}
+ 866:                       target="_blank"
+ 867:                       rel="noopener noreferrer"
+ 868:                       className="px-5 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-semibold text-xs transition-colors flex items-center gap-2"
+ 869:                     >
+ 870:                       <span>🌐</span> Live Project
+ 871:                     </a>
+ 872:                   )}
+ 873:                   <a
+ 874:                     href={selectedRepo.html_url}
+ 875:                     target="_blank"
+ 876:                     rel="noopener noreferrer"
+ 877:                     className="px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-white font-semibold text-xs transition-colors flex items-center gap-2"
+ 878:                   >
+ 879:                     <span>📁</span> GitHub Repository
+ 880:                   </a>
+ 881:                 </div>
+ 882:               </div>
+ 883: 
+ 884:               {/* Key Features / Highlights */}
+ 885:               {selectedRepo.keyFeatures &&
+ 886:                 selectedRepo.keyFeatures.length > 0 && (
+ 887:                   <div>
+ 888:                     <h4 className="text-sm font-semibold text-white mb-3">
+ 889:                       Key Features & Highlights
+ 890:                     </h4>
+ 891:                     <div className="space-y-2">
+ 892:                       {selectedRepo.keyFeatures.map((feature, i) => (
+ 893:                         <div
+ 894:                           key={i}
+ 895:                           className="flex items-start gap-2.5 text-xs text-zinc-300 leading-relaxed"
+ 896:                         >
+ 897:                           <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 text-[10px] mt-0.5">
+ 898:                             ✓
+ 899:                           </span>
+ 900:                           <span>{feature}</span>
+ 901:                         </div>
+ 902:                       ))}
+ 903:                     </div>
+ 904:                   </div>
+ 905:                 )}
+ 906: 
+ 907:               {/* Extracted Project Screenshots / Gallery */}
+ 908:               {selectedRepo.imagesInReadme &&
+ 909:                 selectedRepo.imagesInReadme.length > 1 && (
+ 910:                   <div>
+ 911:                     <h4 className="text-sm font-semibold text-white mb-4">
+ 912:                       Project Gallery & Screenshots
+ 913:                     </h4>
+ 914:                     <div className="grid sm:grid-cols-2 gap-4">
+ 915:                       {selectedRepo.imagesInReadme.slice(1).map((imgUrl, i) => (
+ 916:                         <div
+ 917:                           key={i}
+ 918:                           className="relative rounded-2xl overflow-hidden border border-slate-800 bg-zinc-900 group"
+ 919:                         >
+ 920:                           <img
+ 921:                             src={imgUrl}
+ 922:                             alt={`${selectedRepo.name} screenshot ${i + 1}`}
+ 923:                             className="w-full h-auto object-cover"
+ 924:                           />
+ 925:                         </div>
+ 926:                       ))}
+ 927:                     </div>
+ 928:                   </div>
+ 929:                 )}
+ 930:             </div>
+ 931:           </div>
+ 932:         </div>
+ 933:       )}
+ 934:     </section>
+ 935:   );
+ 936: }

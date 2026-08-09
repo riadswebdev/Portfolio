@@ -1,9 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import Link from "next/link";
+
+const BackgroundVideo = dynamic(() => import("../components/BackgroundVideo"), {
+  ssr: false,
+  loading: () => null,
+});
 
 export default function AboutClient() {
   const highlights = [
@@ -24,8 +31,18 @@ export default function AboutClient() {
       number: "20+",
       label: "Projects",
       icon: (
-        <svg className="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        <svg
+          className="w-5 h-5 text-cyan-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+          />
         </svg>
       ),
     },
@@ -33,8 +50,18 @@ export default function AboutClient() {
       number: "10+",
       label: "Clients",
       icon: (
-        <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        <svg
+          className="w-5 h-5 text-purple-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          />
         </svg>
       ),
     },
@@ -42,8 +69,18 @@ export default function AboutClient() {
       number: "5+",
       label: "Certificates",
       icon: (
-        <svg className="w-5 h-5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+        <svg
+          className="w-5 h-5 text-pink-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+          />
         </svg>
       ),
     },
@@ -51,17 +88,11 @@ export default function AboutClient() {
 
   return (
     <div className="relative min-h-screen text-zinc-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-400 flex flex-col justify-between overflow-hidden">
-
       {/* ── Background Video ── */}
-      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden" style={{ filter: "brightness(0.70) saturate(1.05)" }}>
-        <video
+      <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 overflow-hidden">
+        <BackgroundVideo
           src="https://res.cloudinary.com/djgg1xzaj/video/upload/v1786008084/clideo_editor_feb586d352f84e049a544030d0661b82_ydzmp6.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          disablePictureInPicture
-          className="absolute top-1/2 left-1/2 w-[100vw] h-[100vh] min-w-[177.77vh] min-h-[56.25vw] -translate-x-1/2 -translate-y-1/2 object-cover"
+          poster="/riad.png"
         />
       </div>
 
@@ -70,7 +101,6 @@ export default function AboutClient() {
 
       {/* Main Section */}
       <main className="relative z-10 pt-32 pb-20 px-4 sm:px-6 max-w-6xl mx-auto space-y-16 flex-1">
-
         {/* Top Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -78,20 +108,26 @@ export default function AboutClient() {
           transition={{ duration: 0.5 }}
           className="text-center space-y-3 max-w-2xl mx-auto"
         >
-          <div className="inline-block px-4 py-1.5 rounded-full border border-cyan-500/30 text-xs font-semibold text-cyan-400 tracking-wider uppercase backdrop-blur-md shadow-lg shadow-cyan-500/10" style={{ background: "rgba(4, 6, 12, 0.65)" }}>
+          <div
+            className="inline-block px-4 py-1.5 rounded-full border border-cyan-500/30 text-xs font-semibold text-cyan-400 tracking-wider uppercase backdrop-blur-md shadow-lg shadow-cyan-500/10"
+            style={{ background: "rgba(4, 6, 12, 0.65)" }}
+          >
             About Me
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            Get to know <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">who I am</span>
+            Get to know{" "}
+            <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+              who I am
+            </span>
           </h1>
           <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed max-w-xl mx-auto">
-            A passionate developer dedicated to turning complex ideas into elegant, high-performance digital experiences.
+            A passionate developer dedicated to turning complex ideas into
+            elegant, high-performance digital experiences.
           </p>
         </motion.div>
 
         {/* Bio & Image Grid Section */}
         <div className="grid lg:grid-cols-12 gap-10 items-center">
-
           {/* Left Frame Image */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -99,7 +135,10 @@ export default function AboutClient() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="lg:col-span-5 flex justify-center"
           >
-            <div className="relative group w-full max-w-md aspect-[4/5] rounded-3xl overflow-hidden border border-cyan-500/30 p-2.5 shadow-2xl shadow-cyan-950/40 backdrop-blur-md transition-all duration-500 hover:border-cyan-400/60 hover:shadow-cyan-500/20" style={{ background: "rgba(4, 6, 12, 0.55)" }}>
+            <div
+              className="relative group w-full max-w-md aspect-[4/5] rounded-3xl overflow-hidden border border-cyan-500/30 p-2.5 shadow-2xl shadow-cyan-950/40 backdrop-blur-md transition-all duration-500 hover:border-cyan-400/60 hover:shadow-cyan-500/20"
+              style={{ background: "rgba(4, 6, 12, 0.55)" }}
+            >
               <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/10">
                 <Image
                   src="/riad.png"
@@ -120,7 +159,9 @@ export default function AboutClient() {
             className="lg:col-span-7 space-y-6"
           >
             <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-cyan-400">Professional Bio</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-cyan-400">
+                Professional Bio
+              </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
                 Full Stack Web Developer
               </h2>
@@ -128,7 +169,12 @@ export default function AboutClient() {
                 React / Next.js Specialist
               </h3>
               <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-light pt-1">
-                I&apos;m <span className="text-zinc-100 font-semibold">Md. Riad Shekh</span> — a Full Stack Web Developer focused on scalable, modern and high-performance web applications.
+                I&apos;m{" "}
+                <span className="text-zinc-100 font-semibold">
+                  Md. Riad Shekh
+                </span>{" "}
+                — a Full Stack Web Developer focused on scalable, modern and
+                high-performance web applications.
               </p>
             </div>
 
@@ -144,8 +190,18 @@ export default function AboutClient() {
                   style={{ background: "rgba(4, 6, 12, 0.55)" }}
                 >
                   <div className="w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/35 flex items-center justify-center shrink-0 group-hover:bg-cyan-500/25 transition-colors">
-                    <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-3.5 h-3.5 text-cyan-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   </div>
                   <span className="text-xs text-zinc-300 group-hover:text-white font-medium truncate">
@@ -157,15 +213,25 @@ export default function AboutClient() {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4 pt-4">
-              <a
+              <Link
                 href="/contact"
                 className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
                 </svg>
                 Let&apos;s Work Together
-              </a>
+              </Link>
               <a
                 href="/Md%20Riad%20Shekh%20Final%20Resume.pdf"
                 target="_blank"
@@ -174,8 +240,18 @@ export default function AboutClient() {
                 className="px-7 py-3.5 rounded-xl border border-white/15 hover:border-cyan-500/50 text-zinc-200 hover:text-white text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shadow-lg hover:shadow-cyan-500/10 hover:scale-[1.02] active:scale-[0.98] group cursor-pointer backdrop-blur-md"
                 style={{ background: "rgba(4, 6, 12, 0.55)" }}
               >
-                <svg className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                <svg
+                  className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
                 </svg>
                 <span>Download Resume</span>
               </a>
@@ -195,11 +271,18 @@ export default function AboutClient() {
               className="p-6 rounded-2xl border border-white/10 hover:border-cyan-500/40 transition-all duration-300 text-center space-y-2 flex flex-col items-center justify-center shadow-lg backdrop-blur-md hover:-translate-y-1 hover:shadow-cyan-500/10"
               style={{ background: "rgba(4, 6, 12, 0.55)" }}
             >
-              <div className="p-3 rounded-xl border border-cyan-500/20 mb-1" style={{ background: "rgba(10, 14, 22, 0.75)" }}>
+              <div
+                className="p-3 rounded-xl border border-cyan-500/20 mb-1"
+                style={{ background: "rgba(10, 14, 22, 0.75)" }}
+              >
                 {stat.icon}
               </div>
-              <p className="text-3xl font-extrabold text-white tracking-tight">{stat.number}</p>
-              <p className="text-xs text-zinc-300 font-medium tracking-wide">{stat.label}</p>
+              <p className="text-3xl font-extrabold text-white tracking-tight">
+                {stat.number}
+              </p>
+              <p className="text-xs text-zinc-300 font-medium tracking-wide">
+                {stat.label}
+              </p>
             </motion.div>
           ))}
         </div>
@@ -218,19 +301,40 @@ export default function AboutClient() {
             Background &amp; Philosophy
           </h3>
           <p>
-            Hi, I&apos;m <span className="font-bold text-white">Md. Riad Shekh</span>, a passionate <span className="text-cyan-400 font-semibold">Full Stack Web Developer</span> with a strong interest in building modern, responsive, and user-friendly web applications.
+            Hi, I&apos;m{" "}
+            <span className="font-bold text-white">Md. Riad Shekh</span>, a
+            passionate{" "}
+            <span className="text-cyan-400 font-semibold">
+              Full Stack Web Developer
+            </span>{" "}
+            with a strong interest in building modern, responsive, and
+            user-friendly web applications.
           </p>
           <p>
-            My programming journey began with learning HTML and CSS out of curiosity. As I continued exploring web development, I mastered JavaScript and React, and later expanded my skills to Next.js, Node.js, Express.js, MongoDB, and modern development tools. Every project I build helps me improve my problem-solving skills and understand real-world software development practices.
+            My programming journey began with learning HTML and CSS out of
+            curiosity. As I continued exploring web development, I mastered
+            JavaScript and React, and later expanded my skills to Next.js,
+            Node.js, Express.js, MongoDB, and modern development tools. Every
+            project I build helps me improve my problem-solving skills and
+            understand real-world software development practices.
           </p>
           <p>
-            I especially enjoy creating full-stack applications with clean UI, smooth user experiences, secure authentication, and scalable backend architecture. Turning ideas into functional products is the part of development I enjoy the most.
+            I especially enjoy creating full-stack applications with clean UI,
+            smooth user experiences, secure authentication, and scalable backend
+            architecture. Turning ideas into functional products is the part of
+            development I enjoy the most.
           </p>
           <p>
-            Outside of programming, I enjoy learning new technologies, exploring modern UI/UX design trends, editing videos, and spending time improving my creative skills. I also enjoy listening to music and continuously challenging myself with new projects.
+            Outside of programming, I enjoy learning new technologies, exploring
+            modern UI/UX design trends, editing videos, and spending time
+            improving my creative skills. I also enjoy listening to music and
+            continuously challenging myself with new projects.
           </p>
           <p>
-            I believe in continuous learning, writing clean code, and building solutions that make people&apos;s lives easier. My goal is to become a professional software engineer delivering impactful solutions globally.
+            I believe in continuous learning, writing clean code, and building
+            solutions that make people&apos;s lives easier. My goal is to become
+            a professional software engineer delivering impactful solutions
+            globally.
           </p>
         </motion.div>
 
@@ -243,12 +347,14 @@ export default function AboutClient() {
           className="p-6 rounded-2xl border border-cyan-500/25 text-center space-y-2 shadow-lg backdrop-blur-md transition-all hover:border-cyan-500/40 hover:shadow-cyan-500/10"
           style={{ background: "rgba(4, 6, 12, 0.60)" }}
         >
-          <h4 className="text-xs font-bold text-cyan-400 tracking-widest uppercase">Core Stack &amp; Workflow:</h4>
+          <h4 className="text-xs font-bold text-cyan-400 tracking-widest uppercase">
+            Core Stack &amp; Workflow:
+          </h4>
           <p className="text-xs sm:text-sm text-zinc-200 font-medium">
-            React, Next.js, Node.js, MongoDB, Tailwind CSS, TypeScript, BetterAuth, Docker, Vercel
+            React, Next.js, Node.js, MongoDB, Tailwind CSS, TypeScript,
+            BetterAuth, Docker, Vercel
           </p>
         </motion.div>
-
       </main>
 
       {/* Compact Footer */}
