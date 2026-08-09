@@ -67,11 +67,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Debug logging: status and raw counts
-    console.debug("[github-route] GitHub API status:", response.status);
-    console.debug("[github-route] raw repos count:", data.length);
+      // GitHub API status and raw counts (no debug logs in production)
 
     const nonForkRepos = data.filter((repo) => !repo.fork);
-    console.debug("[github-route] nonForkRepos count:", nonForkRepos.length);
+      // nonForkRepos count computed
 
     // Enrich readme per-repo but don't let a single failure collapse everything
     const settled = await Promise.allSettled(
@@ -94,10 +93,7 @@ export async function GET(request: NextRequest) {
               ).toString("utf8");
             }
           } else {
-            console.debug(
-              `[github-route] readme fetch non-ok for ${repo.full_name}:`,
-              readmeRes.status,
-            );
+              // readme fetch non-ok for ${repo.full_name}
           }
         } catch (err: any) {
           console.warn(
@@ -150,10 +146,7 @@ export async function GET(request: NextRequest) {
       .filter((s) => s.status === "fulfilled")
       .map((s) => (s as PromiseFulfilledResult<GithubRepo>).value);
 
-    console.debug(
-      "[github-route] enrichedRepos (fulfilled) count:",
-      enrichedRepos.length,
-    );
+      // enrichedRepos and rejectedCount computed
     if (rejectedCount > 0) {
       console.warn(
         "[github-route] readme enrichment rejections:",
@@ -174,17 +167,11 @@ export async function GET(request: NextRequest) {
         repo.language,
     );
 
-    console.debug(
-      "[github-route] reposWithReadme count:",
-      reposWithReadme.length,
-    );
+      // reposWithReadme computed
 
     const finalRepos =
       reposWithReadme.length > 0 ? reposWithReadme : enrichedRepos;
-    console.debug(
-      "[github-route] finalRepos count (to return):",
-      finalRepos.length,
-    );
+      // finalRepos computed
 
     const responseBody = JSON.stringify(finalRepos);
     const res = new NextResponse(responseBody, {
