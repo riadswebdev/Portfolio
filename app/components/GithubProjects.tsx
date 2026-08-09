@@ -3,11 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import {
-  GithubRepo,
-  ParsedTechStack,
-  TECH_DICTIONARY,
-} from "../lib/github";
+import { GithubRepo, ParsedTechStack, TECH_DICTIONARY } from "../lib/github";
 
 const repoCache = new Map<string, GithubRepo[]>();
 const repoFetchPromises = new Map<string, Promise<GithubRepo[]>>();
@@ -313,15 +309,43 @@ export default function GithubProjects({
             }
 
             const data = (await response.json()) as GithubRepo[];
-            repoCache.set(cacheKey, data);
+
+            // Only cache successful non-empty results to avoid caching transient empty arrays
+            if (Array.isArray(data) && data.length > 0) {
+              repoCache.set(cacheKey, data);
+            } else {
+              console.debug(
+                "[github-client] API returned empty or non-array result — not caching",
+                data,
+              );
+            }
+
             return data;
           })();
+
+          // Ensure failed promises are removed so future retries can run
+          promise.catch((err) => {
+            console.warn(
+              "[github-client] fetch promise rejected, clearing promise cache:",
+              err?.message ?? err,
+            );
+            repoFetchPromises.delete(cacheKey);
+          });
 
           repoFetchPromises.set(cacheKey, promise);
         }
 
         const data = await repoFetchPromises.get(cacheKey)!;
-        setRepos(data);
+        console.debug(
+          "[github-client] frontend received repository count:",
+          Array.isArray(data) ? data.length : 0,
+        );
+        // If API returned non-empty array use it; otherwise fallback to any existing cached value
+        const finalData =
+          Array.isArray(data) && data.length > 0 ?
+            data
+          : (repoCache.get(cacheKey) ?? data);
+        setRepos(finalData as GithubRepo[]);
       } catch (err: any) {
         if (err.name === "AbortError") return;
         setError(err.message || "Failed to load GitHub repositories.");

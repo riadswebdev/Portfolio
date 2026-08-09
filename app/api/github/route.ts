@@ -39,10 +39,14 @@ export async function GET(request: NextRequest) {
       );
     }
     if (response.status === 403) {
+      const remaining = response.headers.get("x-ratelimit-remaining");
+      const reset = response.headers.get("x-ratelimit-reset");
       return NextResponse.json(
         {
           error:
             "GitHub API rate limit exceeded or the token is invalid. Set a valid server-side GITHUB_TOKEN and retry.",
+          rateLimitRemaining: remaining,
+          rateLimitReset: reset,
         },
         { status: 503 },
       );
@@ -61,9 +65,16 @@ export async function GET(request: NextRequest) {
         { status: 502 },
       );
     }
-    const nonForkRepos = data.filter((repo) => !repo.fork);
 
-    const enrichedRepos = await Promise.all(
+    // Debug logging: status and raw counts
+    console.debug("[github-route] GitHub API status:", response.status);
+    console.debug("[github-route] raw repos count:", data.length);
+
+    const nonForkRepos = data.filter((repo) => !repo.fork);
+    console.debug("[github-route] nonForkRepos count:", nonForkRepos.length);
+
+    // Enrich readme per-repo but don't let a single failure collapse everything
+    const settled = await Promise.allSettled(
       nonForkRepos.map(async (repo) => {
         let readmeContent: string | null = null;
         let imagesInReadme: string[] = [];
@@ -82,11 +93,16 @@ export async function GET(request: NextRequest) {
                 "base64",
               ).toString("utf8");
             }
+          } else {
+            console.debug(
+              `[github-route] readme fetch non-ok for ${repo.full_name}:`,
+              readmeRes.status,
+            );
           }
-        } catch (err) {
+        } catch (err: any) {
           console.warn(
             `GitHub readme fetch failed for ${repo.full_name}:`,
-            err,
+            err?.message ?? err,
           );
         }
 
@@ -129,20 +145,47 @@ export async function GET(request: NextRequest) {
       }),
     );
 
+    const rejectedCount = settled.filter((s) => s.status === "rejected").length;
+    const enrichedRepos = settled
+      .filter((s) => s.status === "fulfilled")
+      .map((s) => (s as PromiseFulfilledResult<GithubRepo>).value);
+
+    console.debug(
+      "[github-route] enrichedRepos (fulfilled) count:",
+      enrichedRepos.length,
+    );
+    if (rejectedCount > 0) {
+      console.warn(
+        "[github-route] readme enrichment rejections:",
+        rejectedCount,
+      );
+    }
+
     const reposWithReadme = enrichedRepos.filter(
       (repo) =>
         repo.description ||
         repo.bannerUrl ||
         repo.liveUrl ||
-        repo.techStack.frontend.length > 0 ||
-        repo.techStack.backend.length > 0 ||
-        repo.techStack.database.length > 0 ||
-        repo.techStack.devTools.length > 0 ||
+        (repo.techStack &&
+          (repo.techStack.frontend.length > 0 ||
+            repo.techStack.backend.length > 0 ||
+            repo.techStack.database.length > 0 ||
+            repo.techStack.devTools.length > 0)) ||
         repo.language,
+    );
+
+    console.debug(
+      "[github-route] reposWithReadme count:",
+      reposWithReadme.length,
     );
 
     const finalRepos =
       reposWithReadme.length > 0 ? reposWithReadme : enrichedRepos;
+    console.debug(
+      "[github-route] finalRepos count (to return):",
+      finalRepos.length,
+    );
+
     const responseBody = JSON.stringify(finalRepos);
     const res = new NextResponse(responseBody, {
       status: 200,
