@@ -621,7 +621,7 @@ export default function Home() {
               collaboration. Have a project in mind or want to talk tech?
             </p>
             <div className="pt-2 flex flex-wrap gap-4 items-center">
-              <a
+              <Link
                 href="/contact"
                 className="px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold shadow-xl shadow-cyan-500/25 transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2 text-sm"
               >
@@ -639,8 +639,8 @@ export default function Home() {
                     d="M14 5l7 7m0 0l-7 7m7-7H3"
                   />
                 </svg>
-              </a>
-              <a
+              </Link>
+              <Link
                 href="https://github.com/riadswebdev"
                 target="_blank"
                 rel="noreferrer"
@@ -658,7 +658,7 @@ export default function Home() {
                   />
                 </svg>
                 GitHub Profile
-              </a>
+              </Link>
             </div>
           </div>
         </motion.div>
