@@ -58,12 +58,19 @@ const CREW_ROLE_AGENT_IDS: Record<BuildStage, string[]> = {
   ],
 };
 
-export interface WorkflowSnapshot {
-  stage: BuildStage | "done";
-  stageProgress: number;
-  overallProgress: number;
-  complete: boolean;
-}
+export type WorkflowSnapshot =
+  | {
+      stage: BuildStage;
+      stageProgress: number;
+      overallProgress: number;
+      complete: false;
+    }
+  | {
+      stage: "done";
+      stageProgress: 1;
+      overallProgress: 1;
+      complete: true;
+    };
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
