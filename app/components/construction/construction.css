@@ -1,107 +1,221 @@
-/* ═══════════════════════════════════════════════════════════════
-   Real Editor-Like UI Construction Engine Styles
-   ═══════════════════════════════════════════════════════════════ */
+/* Real, time-based block construction. Layout is kept stable while each crew works. */
 
-/* Base constructible element node */
 [data-construct-node] {
-  position: relative;
-  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  transition:
+    opacity 180ms ease,
+    filter 220ms ease,
+    outline-color 220ms ease,
+    box-shadow 220ms ease;
 }
 
-/* 1. Unconstructed State: Blank / Wireframe placeholder with preserved layout */
-[data-construct-state="unconstructed"] {
-  opacity: 0 !important;
+/* Not yet requested by the viewport: retain a faint wireframe, not a completed UI. */
+[data-construct-state="unconstructed"],
+[data-construct-state="queued"] {
+  opacity: 0.13 !important;
   pointer-events: none !important;
   user-select: none !important;
+  filter: saturate(0.18) brightness(0.68);
 }
 
-/* For structural cards/sections when unconstructed: faint blueprint outline */
 [data-construct-type="card"][data-construct-state="unconstructed"],
-[data-construct-type="section"][data-construct-state="unconstructed"] {
-  opacity: 0.15 !important;
-  outline: 1px dashed rgba(56, 189, 248, 0.25) !important;
+[data-construct-type="card"][data-construct-state="queued"] {
+  outline: 1px dashed rgba(56, 189, 248, 0.28) !important;
   outline-offset: -1px;
-  background-color: rgba(6, 10, 20, 0.2) !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
 
-/* Hide children of unconstructed cards */
-[data-construct-type="card"][data-construct-state="unconstructed"] > * {
+[data-construct-type="card"][data-construct-state="unconstructed"] > *,
+[data-construct-type="card"][data-construct-state="queued"] > * {
   opacity: 0 !important;
 }
 
-/* 2. Actively Constructing State: Progressive reveals */
-[data-construct-state="constructing"] {
+/* MARK: one crew claims a block and draws a marquee selection around it. */
+[data-construct-state="mark"] {
+  opacity: 0.2 !important;
   pointer-events: none !important;
   user-select: none !important;
-}
-
-/* Text / Headings reveal: horizontal editor-like typing wipe */
-[data-construct-type="text"][data-construct-state="constructing"],
-[data-construct-type="heading"][data-construct-state="constructing"] {
-  opacity: 1 !important;
-  clip-path: inset(0 calc((1 - var(--construct-p, 0)) * 100%) 0 0);
-  position: relative;
-}
-
-/* Typing cursor beacon at the edge of the text reveal */
-[data-construct-type="text"][data-construct-state="constructing"]::after,
-[data-construct-type="heading"][data-construct-state="constructing"]::after {
-  content: "";
-  position: absolute;
-  top: 10%;
-  left: calc(var(--construct-p, 0) * 100%);
-  width: 2px;
-  height: 80%;
-  background-color: var(--active-agent-color, #06b6d4);
-  box-shadow: 0 0 8px 1px var(--active-agent-color, #06b6d4);
-  z-index: 10;
-  pointer-events: none;
-}
-
-/* Card Progressive Construction */
-[data-construct-type="card"][data-construct-state="constructing"] {
-  opacity: calc(0.2 + var(--construct-p, 0) * 0.8) !important;
-  outline: 1px dashed var(--active-agent-color, rgba(6, 182, 212, 0.6)) !important;
-  outline-offset: -1px;
-  transform: translateY(calc((1 - var(--construct-p, 0)) * 8px)) scale(calc(0.98 + var(--construct-p, 0) * 0.02));
-  box-shadow: 0 0 20px -5px var(--active-agent-color, rgba(6, 182, 212, 0.3));
-}
-
-/* Buttons Progressive Assembly */
-[data-construct-type="button"][data-construct-state="constructing"] {
-  opacity: calc(0.3 + var(--construct-p, 0) * 0.7) !important;
-  outline: 1px dashed var(--active-agent-color, #3b82f6) !important;
+  filter: saturate(0.24) brightness(0.78);
+  outline: 1px dashed var(--active-agent-color, #38bdf8) !important;
   outline-offset: 2px;
-  transform: scale(calc(0.94 + var(--construct-p, 0) * 0.06));
 }
 
-/* Images & Media Mask Wipe */
-[data-construct-type="image"][data-construct-state="constructing"] {
-  opacity: var(--construct-p, 0) !important;
-  clip-path: inset(0 0 calc((1 - var(--construct-p, 0)) * 100%) 0);
-  filter: contrast(calc(0.8 + var(--construct-p, 0) * 0.2)) brightness(calc(0.7 + var(--construct-p, 0) * 0.3));
+/* MAKE: the real target stays in blueprint state while a separate parcel travels in. */
+[data-construct-state="make"] {
+  opacity: calc(0.2 + var(--construct-stage-p, 0) * 0.34) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  filter: saturate(0.35) brightness(0.82);
+  clip-path: inset(0 calc((1 - var(--construct-stage-p, 0)) * 100%) 0 0);
 }
 
-/* 3. Constructed State: Fully assembled native website UI */
+[data-construct-type="text"][data-construct-state="make"],
+[data-construct-type="heading"][data-construct-state="make"] {
+  opacity: 1 !important;
+  clip-path: inset(0 calc((1 - var(--construct-stage-p, 0)) * 100%) 0 0);
+}
+
+/* PAINT: content fills in progressively while the Paint cursor traces the exact border. */
+[data-construct-state="paint"] {
+  opacity: calc(0.62 + var(--construct-stage-p, 0) * 0.38) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  filter:
+    saturate(calc(0.32 + var(--construct-stage-p, 0) * 0.68))
+    brightness(calc(0.82 + var(--construct-stage-p, 0) * 0.18));
+  clip-path: inset(0 calc((1 - var(--construct-stage-p, 0)) * 100%) 0 0);
+  outline: 1px solid var(--active-agent-color, rgba(245, 158, 11, 0.55)) !important;
+  outline-offset: 1px;
+}
+
+[data-construct-type="text"][data-construct-state="paint"],
+[data-construct-type="heading"][data-construct-state="paint"] {
+  opacity: 1 !important;
+  clip-path: inset(0 calc((1 - var(--construct-stage-p, 0)) * 100%) 0 0);
+}
+
+/* QA: the visual is fully revealed while the reviewer scans the block. */
+[data-construct-state="qa"] {
+  opacity: 1 !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  filter: saturate(0.92) brightness(0.98);
+  outline: 1px solid rgba(52, 211, 153, 0.78) !important;
+  outline-offset: 2px;
+}
+
+/* Final accepted block returns to its original native appearance. */
 [data-construct-state="constructed"] {
   opacity: 1 !important;
   clip-path: none !important;
   outline: none !important;
   pointer-events: auto !important;
   user-select: auto !important;
-  transform: none !important;
+  filter: none !important;
 }
 
-/* Accessibility: instant display for reduced motion */
+/* Selection / locking visual layer inspired by the reference editor footage. */
+.construction-selection {
+  position: fixed;
+  z-index: 44;
+  pointer-events: none;
+  border: 1px dashed currentColor;
+  box-shadow: 0 0 16px color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.construction-selection__label {
+  position: absolute;
+  left: -1px;
+  top: -19px;
+  max-width: 220px;
+  padding: 3px 6px;
+  border-radius: 4px 4px 0 0;
+  color: #020617;
+  background: currentColor;
+  font: 700 8px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+}
+
+.construction-selection__handle {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+  background: #f8fafc;
+  box-shadow: 0 0 7px currentColor;
+}
+
+.construction-selection__handle--tl { left: -4px; top: -4px; }
+.construction-selection__handle--tr { right: -4px; top: -4px; }
+.construction-selection__handle--bl { left: -4px; bottom: -4px; }
+.construction-selection__handle--br { right: -4px; bottom: -4px; }
+
+.construction-selection__sweep {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 2px;
+  width: 100%;
+  opacity: 0.9;
+  transform-origin: left center;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Make-stage content parcel: a clearly separate object being carried into place. */
+.construction-parcel {
+  position: fixed;
+  z-index: 46;
+  pointer-events: none;
+  overflow: hidden;
+  border: 1px solid;
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: rgba(8, 12, 24, 0.94);
+  backdrop-filter: blur(12px);
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.construction-parcel__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+}
+
+.construction-parcel__title {
+  margin-top: 7px;
+  overflow: hidden;
+  color: #f8fafc;
+  font-size: 10px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.construction-parcel__skeleton {
+  display: grid;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.construction-parcel__skeleton span {
+  display: block;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(203, 213, 225, 0.34);
+}
+
+.construction-parcel__skeleton span:nth-child(1) { width: 88%; }
+.construction-parcel__skeleton span:nth-child(2) { width: 67%; }
+.construction-parcel__skeleton span:nth-child(3) { width: 78%; }
+
+@media (max-width: 640px) {
+  #agent-activity-log {
+    width: 184px;
+    right: 10px;
+    bottom: 58px;
+    opacity: 0.94;
+  }
+
+  #construction-hud {
+    left: 10px;
+    bottom: 10px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-construct-node] {
     opacity: 1 !important;
     clip-path: none !important;
     outline: none !important;
-    pointer-events: auto !important;
+    filter: none !important;
     transform: none !important;
+    pointer-events: auto !important;
+    user-select: auto !important;
   }
 }
-
