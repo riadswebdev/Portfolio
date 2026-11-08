@@ -28,10 +28,10 @@ export const SIGNATURE_TARGET_OFFSETS: [number, number, string][] = [
   [124, 20, "Arc D"],
   [108, 32, "Curve D"],
   // Star ✨ (4 agents)
-  [138, 12, "Star ↑"],
-  [144, 18, "Star →"],
-  [138, 24, "Star ↓"],
-  [132, 18, "Star ←"],
+  [138, 8, "Star ↑"],
+  [148, 18, "Star →"],
+  [138, 28, "Star ↓"],
+  [128, 18, "Star ←"],
 ];
 
 interface RiadSignatureProps {
@@ -45,8 +45,12 @@ export const RiadSignature = memo(function RiadSignature({
 }: RiadSignatureProps) {
   if (!isVisible && progress === 0) return null;
 
-  // Total length of RIAD letters is approximately 450px
-  const strokeDashoffset = (1 - Math.min(Math.max(progress, 0), 1)) * 480;
+  const normalizedProgress = Math.min(Math.max(progress, 0), 1);
+  // SVG pathLength normalizes each glyph, so the same progress value reveals
+  // the complete actual path instead of relying on guessed pixel lengths.
+  const letterOffset = 1 - normalizedProgress;
+  const starProgress = Math.min(Math.max((normalizedProgress - 0.72) / 0.28, 0), 1);
+  const starOffset = 1 - starProgress;
 
   return (
     <div
@@ -86,8 +90,9 @@ export const RiadSignature = memo(function RiadSignature({
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="140"
-            strokeDashoffset={strokeDashoffset}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset={letterOffset}
             filter="url(#sig-glow)"
           />
 
@@ -98,8 +103,9 @@ export const RiadSignature = memo(function RiadSignature({
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="90"
-            strokeDashoffset={strokeDashoffset}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset={letterOffset}
             filter="url(#sig-glow)"
           />
 
@@ -110,8 +116,9 @@ export const RiadSignature = memo(function RiadSignature({
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="120"
-            strokeDashoffset={strokeDashoffset}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset={letterOffset}
             filter="url(#sig-glow)"
           />
 
@@ -122,17 +129,22 @@ export const RiadSignature = memo(function RiadSignature({
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="130"
-            strokeDashoffset={strokeDashoffset}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset={letterOffset}
             filter="url(#sig-glow)"
           />
 
-          {/* Elegant Star Accent ✨ */}
+          {/* Star accent is traced after the letter formation begins. */}
           <path
-            d="M 138 12 Q 138 18 132 18 Q 138 18 138 24 Q 138 18 144 18 Q 138 18 138 12 Z"
-            fill="#38bdf8"
-            stroke="#ffffff"
-            strokeWidth="0.8"
+            d="M 138 8 L 140.5 15.5 L 148 18 L 140.5 20.5 L 138 28 L 135.5 20.5 L 128 18 L 135.5 15.5 Z"
+            fill="none"
+            stroke="#38bdf8"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset={starOffset}
             className="animate-pulse"
           />
         </svg>
