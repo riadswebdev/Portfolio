@@ -1117,7 +1117,7 @@ export default function ConstructionEngine() {
         isVisible={signatureVisible}
         left={signaturePosition.left}
         top={signaturePosition.top}
-        width={signatureWidth}
+        width={signaturePosition.width}
         opacity={signatureOpacity}
       />
 
