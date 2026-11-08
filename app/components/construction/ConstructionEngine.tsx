@@ -23,7 +23,6 @@ import {
 } from "./workflow";
 import {
   getSignatureStrokePoint,
-  SIGNATURE_STROKES,
 } from "./signaturePaths";
 
 type NodeType = "heading" | "text" | "card" | "button" | "image" | "input";
@@ -200,6 +199,7 @@ export default function ConstructionEngine() {
   const swarmStartTimeRef = useRef<number | null>(null);
   const dispersalStartTimeRef = useRef<number | null>(null);
   const swarmPositionsRef = useRef<Array<{ x: number; y: number }>>([]);
+  const swarmDispersalOriginsRef = useRef<Array<{ x: number; y: number }>>([]);
 
   const registerElements = useCallback(() => {
     if (typeof document === "undefined") return;
@@ -373,16 +373,17 @@ export default function ConstructionEngine() {
         );
         const cursors = AGENT_POOL.map((agent, index) => {
           const point = getSignatureStrokePoint(index, 1);
-          const previous = swarmPositionsRef.current[index] || {
-            x: originX + point.x * scale,
-            y: originY + point.y * scale,
-          };
+          const origin = swarmDispersalOriginsRef.current[index] ||
+            swarmPositionsRef.current[index] || {
+              x: originX + point.x * scale,
+              y: originY + point.y * scale,
+            };
           const angle = (index / AGENT_POOL.length) * Math.PI * 2 + 0.25;
           const distance = 180 * easeInOutCubic(dispersalProgress);
           return {
             agent,
-            x: previous.x + Math.cos(angle) * distance,
-            y: previous.y + Math.sin(angle) * distance,
+            x: origin.x + Math.cos(angle) * distance,
+            y: origin.y + Math.sin(angle) * distance,
             actionText: "DISPERSING",
             isClicking: false,
             isWorking: false,
@@ -405,6 +406,7 @@ export default function ConstructionEngine() {
           swarmStartTimeRef.current = null;
           dispersalStartTimeRef.current = null;
           swarmPositionsRef.current = [];
+          swarmDispersalOriginsRef.current = [];
           setSignatureVisible(false);
           setSignatureProgress(0);
           setSignatureOpacity(1);
@@ -850,6 +852,7 @@ export default function ConstructionEngine() {
     swarmStartTimeRef.current = null;
     dispersalStartTimeRef.current = null;
     swarmPositionsRef.current = [];
+    swarmDispersalOriginsRef.current = [];
     signatureHasPlayedRef.current = false;
     setSignatureVisible(false);
     setSignatureProgress(0);
@@ -904,6 +907,10 @@ export default function ConstructionEngine() {
       ) {
         swarmPhaseRef.current = "dispersing";
         dispersalStartTimeRef.current = performance.now();
+        swarmDispersalOriginsRef.current = swarmPositionsRef.current.map((point) => ({
+          x: point.x,
+          y: point.y,
+        }));
       }
 
       if (scrollSettleTimeoutRef.current !== null) {
