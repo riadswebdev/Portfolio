@@ -19,6 +19,7 @@ export function getPointOnElementPerimeter(width:number,height:number,borderRadi
   const w=Math.max(0,width),h=Math.max(0,height),p=clamp01(progress);
   if(!w||!h)return {x:0,y:0};
   if(isHexagon){
+    if(p===0||p===1)return {x:w*.5,y:0};
     const pts:PerimeterPoint[]=[
       {x:w*.5,y:0},{x:w,y:h*.25},{x:w,y:h*.75},
       {x:w*.5,y:h},{x:0,y:h*.75},{x:0,y:h*.25},{x:w*.5,y:0}
@@ -36,6 +37,7 @@ export function getPointOnElementPerimeter(width:number,height:number,borderRadi
     return pts[0];
   }
   const r=Math.min(Math.max(0,borderRadius),Math.min(w,h)*.5);
+  if(p===0||p===1)return {x:r,y:0};
   if(!r){
     let d=p*2*(w+h);
     if(d<=w)return {x:d,y:0}; d-=w;
