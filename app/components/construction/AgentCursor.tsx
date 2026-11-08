@@ -12,6 +12,8 @@ interface AgentCursorProps {
   isVisible?: boolean;
   isWorking?: boolean;
   showLabel?: boolean;
+  roleLabel?: string;
+  cursorSize?: number;
   opacity?: number;
 }
 
@@ -24,6 +26,8 @@ export const AgentCursor = memo(function AgentCursor({
   isVisible = true,
   isWorking = true,
   showLabel = true,
+  roleLabel,
+  cursorSize = 14,
   opacity,
 }: AgentCursorProps) {
   if (!isVisible && opacity === undefined) return null;
@@ -51,6 +55,8 @@ export const AgentCursor = memo(function AgentCursor({
       className="fixed top-0 left-0 pointer-events-none z-45 transition-transform duration-75 ease-out will-change-transform select-none"
       style={{
         transform: `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`,
+        width: cursorSize,
+        height: cursorSize,
         opacity: currentOpacity,
       }}
       aria-hidden="true"
@@ -74,7 +80,7 @@ export const AgentCursor = memo(function AgentCursor({
           filter: `drop-shadow(0 2px 6px ${agent.glowColor})`,
         }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <svg width={cursorSize} height={cursorSize} viewBox="0 0 24 24" fill="none">
           <path
             d="M3 2L19.5 13.5L12 15L9 22L3 2Z"
             fill={agent.color}
@@ -114,7 +120,7 @@ export const AgentCursor = memo(function AgentCursor({
           }}
         >
           <span>{agent.avatarIcon}</span>
-          <span style={{ color: agent.color }}>{shortRole}</span>
+          <span style={{ color: agent.color }}>{roleLabel || shortRole}</span>
         </div>
 
         {/* Action text: only rendered while actively working, short & compact */}

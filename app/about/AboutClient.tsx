@@ -100,13 +100,13 @@ export default function AboutClient() {
       <Navbar activeSection="about" />
 
       {/* Main Section */}
-      <main className="relative z-10 pt-32 pb-20 px-4 sm:px-6 max-w-6xl mx-auto space-y-16 flex-1">
+      <main data-construction-target="about-page" className="relative z-10 pt-32 pb-20 px-4 sm:px-6 max-w-6xl mx-auto space-y-16 flex-1">
         {/* Top Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center space-y-3 max-w-2xl mx-auto"
+          data-construction-target="about-intro" className="text-center space-y-3 max-w-2xl mx-auto"
         >
           <div
             className="inline-block px-4 py-1.5 rounded-full border border-cyan-500/30 text-xs font-semibold text-cyan-400 tracking-wider uppercase backdrop-blur-md shadow-lg shadow-cyan-500/10"
@@ -127,7 +127,7 @@ export default function AboutClient() {
         </motion.div>
 
         {/* Bio & Image Grid Section */}
-        <div className="grid lg:grid-cols-12 gap-10 items-center">
+        <div data-construction-target="about-profile" className="grid lg:grid-cols-12 gap-10 items-center">
           {/* Left Frame Image */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -260,7 +260,7 @@ export default function AboutClient() {
         </div>
 
         {/* 3 Stats Boxes */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
+        <div data-construction-target="about-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
           {stats.map((stat, idx) => (
             <motion.div
               key={idx}
@@ -293,7 +293,7 @@ export default function AboutClient() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="p-8 sm:p-10 rounded-3xl border border-white/10 space-y-5 text-zinc-200 text-xs sm:text-sm leading-relaxed font-light backdrop-blur-md shadow-xl"
+          data-construction-target="about-story" className="p-8 sm:p-10 rounded-3xl border border-white/10 space-y-5 text-zinc-200 text-xs sm:text-sm leading-relaxed font-light backdrop-blur-md shadow-xl"
           style={{ background: "rgba(4, 6, 12, 0.58)" }}
         >
           <h3 className="text-lg font-bold text-white tracking-tight border-b border-white/10 pb-3 flex items-center gap-2">
@@ -344,7 +344,7 @@ export default function AboutClient() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4 }}
-          className="p-6 rounded-2xl border border-cyan-500/25 text-center space-y-2 shadow-lg backdrop-blur-md transition-all hover:border-cyan-500/40 hover:shadow-cyan-500/10"
+          data-construction-target="about-stack" className="p-6 rounded-2xl border border-cyan-500/25 text-center space-y-2 shadow-lg backdrop-blur-md transition-all hover:border-cyan-500/40 hover:shadow-cyan-500/10"
           style={{ background: "rgba(4, 6, 12, 0.60)" }}
         >
           <h4 className="text-xs font-bold text-cyan-400 tracking-widest uppercase">

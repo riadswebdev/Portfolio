@@ -32,8 +32,8 @@ export default function ProjectClient() {
 
       <Navbar activeSection="projects" />
 
-      <main className="pt-24 pb-16">
-        <GithubProjects username="riadswebdev" />
+      <main data-construction-target="projects-page" className="pt-24 pb-16">
+        <div data-construction-target="github-project-gallery"><GithubProjects username="riadswebdev" /></div>
       </main>
 
       <Footer />
