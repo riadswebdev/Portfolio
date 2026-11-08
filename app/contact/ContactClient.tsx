@@ -206,13 +206,13 @@ export default function ContactClient() {
 
       <Navbar activeSection="contact" />
 
-      <main className="pt-32 pb-24 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-12">
+      <main data-construction-target="contact-page" className="pt-32 pb-24 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-12">
         {/* Top Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center max-w-xl mx-auto space-y-3"
+          data-construction-target="contact-intro" className="text-center max-w-xl mx-auto space-y-3"
         >
           <div
             className="inline-block px-4 py-1.5 rounded-full border border-cyan-500/30 text-xs font-semibold text-cyan-400 tracking-wider uppercase backdrop-blur-md shadow-lg shadow-cyan-500/10"
@@ -233,7 +233,7 @@ export default function ContactClient() {
         </motion.div>
 
         {/* 2 Column Contact Layout */}
-        <div className="grid lg:grid-cols-12 gap-8 items-start">
+        <div data-construction-target="contact-workspace" className="grid lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Contact Information */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -312,7 +312,7 @@ export default function ContactClient() {
             className="lg:col-span-7"
           >
             <div
-              className="p-6 sm:p-10 rounded-3xl border border-white/10 space-y-6 shadow-2xl backdrop-blur-md"
+              data-construction-target="contact-form" className="p-6 sm:p-10 rounded-3xl border border-white/10 space-y-6 shadow-2xl backdrop-blur-md"
               style={{ background: "rgba(4, 6, 12, 0.58)" }}
             >
               <div>

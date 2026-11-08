@@ -1049,12 +1049,12 @@ export default function SkillClient() {
         />
       </div>
       <Navbar activeSection="skills" />
-      <main className="relative z-10 pt-32 pb-28 px-6 max-w-6xl mx-auto w-full flex-1 space-y-16">
+      <main data-construction-target="skills-page" className="relative z-10 pt-32 pb-28 px-6 max-w-6xl mx-auto w-full flex-1 space-y-16">
         <motion.div
           initial={{ opacity: 0, y: 26 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto space-y-5"
+          data-construction-target="skills-intro" className="text-center max-w-2xl mx-auto space-y-5"
         >
           <motion.span
             initial={{ opacity: 0, scale: 0.72 }}
@@ -1091,7 +1091,7 @@ export default function SkillClient() {
           </p>
         </motion.div>
         <StatsBanner />
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div data-construction-target="skills-categories" className="grid lg:grid-cols-2 gap-6">
           {CATS.map((cat, i) => (
             <ClusterPanel key={cat.id} cat={cat} index={i} />
           ))}
