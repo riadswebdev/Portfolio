@@ -11,7 +11,7 @@ import {
   getDocumentScrollMetrics,
 } from "./geometry";
 import {
-  BuildStage,
+  type BuildStage,
   CREW_COUNT,
   getCrewAgent,
   getStageAction,
@@ -19,7 +19,7 @@ import {
   easeInOutCubic,
   isWithinConstructionViewport,
   MAX_ACTIVE_CREWS,
-  WorkflowState,
+  type WorkflowState,
 } from "./workflow";
 import {
   getSignatureStrokePoint,
@@ -290,10 +290,13 @@ export default function ConstructionEngine() {
 
       el.setAttribute("data-construct-node", "true");
       el.setAttribute("data-construct-type", type);
-      el.setAttribute(
-        "data-construct-state",
-        stage === "done" ? "constructed" : stage,
-      );
+      const displayState =
+        stage === "done"
+          ? "constructed"
+          : stage === "idle"
+            ? "unconstructed"
+            : stage;
+      el.setAttribute("data-construct-state", displayState);
       el.style.setProperty("--construct-p", String(progress));
       el.style.setProperty("--construct-stage-p", "0");
 
@@ -462,8 +465,7 @@ export default function ConstructionEngine() {
         setActiveBorders([]);
         setSelectionOverlays([]);
         setConstructionParcels([]);
-        setActiveAgentCount(24);
-
+  
         // Once the formation is complete it can remain static. No idle RAF loop.
         return swarmPhaseRef.current !== "holding";
       }
@@ -478,14 +480,10 @@ export default function ConstructionEngine() {
     }
 
     const nodeRects = new Map<ManagedNode, DOMRect>();
-    const visibleNodes: ManagedNode[] = [];
-
     for (const node of nodesRef.current) {
       const rect = node.el.getBoundingClientRect();
       nodeRects.set(node, rect);
       const visible = isWithinConstructionViewport(rect, viewportHeight);
-
-      if (visible) visibleNodes.push(node);
 
       if (visible && node.stage === "idle") {
         node.stage = "queued";
@@ -537,6 +535,7 @@ export default function ConstructionEngine() {
         },
         ...activityLogRef.current,
       ].slice(0, 4);
+      setActivityLog(activityLogRef.current);
     }
 
     const activeCursorsNext: ActiveCursorState[] = [];
@@ -726,7 +725,6 @@ export default function ConstructionEngine() {
     setActiveBorders(activeBordersNext);
     setSelectionOverlays(selectionOverlaysNext);
     setConstructionParcels(parcelsNext);
-    setActiveAgentCount(activeCursorsNext.length);
 
     const hasVisibleQueued = visibleQueue.some((node) => node.stage === "queued");
     const hasVisibleActive = activeCursorsNext.length > 0;
@@ -955,9 +953,6 @@ export default function ConstructionEngine() {
   }, [pathname, registerElements, updateConstruction]);
 
   if (!isMounted || reducedMotion) return null;
-
-  const signatureWidth = signaturePosition.width;
-  const signatureHeight = (signatureWidth * 90) / 320;
 
   return (
     <>
