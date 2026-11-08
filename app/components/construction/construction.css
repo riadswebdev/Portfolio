@@ -219,3 +219,24 @@
     user-select: auto !important;
   }
 }
+
+
+/* Progressive pixel-by-pixel paint reveal, tied to the Paint crew's stage progress. */
+.construction-paint-grid {
+  position: fixed;
+  z-index: 44;
+  display: grid;
+  gap: 2px;
+  padding: 2px;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.construction-paint-grid__tile {
+  min-width: 0;
+  min-height: 0;
+  border-radius: 2px;
+  box-shadow: 0 0 10px currentColor;
+  transition: opacity 90ms linear;
+}

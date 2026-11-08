@@ -81,6 +81,18 @@ interface ConstructionParcel {
   progress: number;
 }
 
+interface ConstructionPaintGrid {
+  id: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  columns: number;
+  rows: number;
+  progress: number;
+  color: string;
+}
+
 interface ActivityEntry {
   id: number;
   text: string;
@@ -152,6 +164,7 @@ export default function ConstructionEngine() {
   const [activeBorders, setActiveBorders] = useState<ActiveBorderTracing[]>([]);
   const [selectionOverlays, setSelectionOverlays] = useState<SelectionOverlay[]>([]);
   const [constructionParcels, setConstructionParcels] = useState<ConstructionParcel[]>([]);
+  const [constructionPaintGrids, setConstructionPaintGrids] = useState<ConstructionPaintGrid[]>([]);
   const [pageProgress, setPageProgress] = useState(0);
   const [pipelineStats, setPipelineStats] = useState<PipelineStats>({
     working: 0,
@@ -385,6 +398,7 @@ export default function ConstructionEngine() {
         setActiveBorders([]);
         setSelectionOverlays([]);
         setConstructionParcels([]);
+        setConstructionPaintGrids([]);
 
         if (dispersalProgress >= 1) {
           swarmPhaseRef.current = "idle";
@@ -465,7 +479,8 @@ export default function ConstructionEngine() {
         setActiveBorders([]);
         setSelectionOverlays([]);
         setConstructionParcels([]);
-  
+        setConstructionPaintGrids([]);
+
         // Once the formation is complete it can remain static. No idle RAF loop.
         return swarmPhaseRef.current !== "holding";
       }
@@ -476,6 +491,7 @@ export default function ConstructionEngine() {
       setActiveBorders([]);
       setSelectionOverlays([]);
       setConstructionParcels([]);
+      setConstructionPaintGrids([]);
       return false;
     }
 
@@ -542,6 +558,7 @@ export default function ConstructionEngine() {
     const activeBordersNext: ActiveBorderTracing[] = [];
     const selectionOverlaysNext: SelectionOverlay[] = [];
     const parcelsNext: ConstructionParcel[] = [];
+    const paintGridsNext: ConstructionPaintGrid[] = [];
     const logEntries: ActivityEntry[] = [];
 
     for (const node of nodesRef.current) {
@@ -653,6 +670,17 @@ export default function ConstructionEngine() {
       } else if (snapshot.stage === "paint") {
         cursorX = rect.left + borderPoint.x;
         cursorY = rect.top + borderPoint.y;
+        paintGridsNext.push({
+          id: node.id,
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          columns: 7,
+          rows: 5,
+          progress: stageProgress,
+          color: agent.color,
+        });
         activeBordersNext.push({
           id: node.id,
           left: rect.left,
@@ -725,6 +753,7 @@ export default function ConstructionEngine() {
     setActiveBorders(activeBordersNext);
     setSelectionOverlays(selectionOverlaysNext);
     setConstructionParcels(parcelsNext);
+    setConstructionPaintGrids(paintGridsNext);
 
     const hasVisibleQueued = visibleQueue.some((node) => node.stage === "queued");
     const hasVisibleActive = activeCursorsNext.length > 0;
@@ -802,6 +831,7 @@ export default function ConstructionEngine() {
         setActiveBorders([]);
         setSelectionOverlays([]);
         setConstructionParcels([]);
+        setConstructionPaintGrids([]);
         setSignatureVisible(false);
       } else {
         nodesRef.current.forEach((node) => {
@@ -885,7 +915,7 @@ export default function ConstructionEngine() {
         scheduleAnimation();
       }, 700);
 
-      updateConstruction(performance.now());
+      // Coalesce high-frequency scroll events into the shared animation frame.
       scheduleAnimation();
     };
 
@@ -962,6 +992,36 @@ export default function ConstructionEngine() {
         className="fixed inset-0 pointer-events-none z-44 overflow-hidden"
         aria-hidden="true"
       >
+        {constructionPaintGrids.map((grid) => {
+          const tileCount = grid.columns * grid.rows;
+          const paintedCount = Math.ceil(grid.progress * tileCount);
+          return (
+            <div
+              key={grid.id}
+              className="construction-paint-grid"
+              style={{
+                left: grid.left,
+                top: grid.top,
+                width: grid.width,
+                height: grid.height,
+                gridTemplateColumns: "repeat(" + grid.columns + ", minmax(0, 1fr))",
+                gridTemplateRows: "repeat(" + grid.rows + ", minmax(0, 1fr))",
+              }}
+            >
+              {Array.from({ length: tileCount }, (_, index) => (
+                <span
+                  key={index}
+                  className="construction-paint-grid__tile"
+                  style={{
+                    backgroundColor: grid.color,
+                    opacity: index < paintedCount ? 0.2 : 0,
+                  }}
+                />
+              ))}
+            </div>
+          );
+        })}
+
         {selectionOverlays.map((overlay) => (
           <div
             key={overlay.id}
