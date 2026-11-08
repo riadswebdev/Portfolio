@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:construction": "node --experimental-strip-types --test app/components/construction/geometry.test.mjs"
   },
   "dependencies": {
     "@heroui/react": "^3.2.3",

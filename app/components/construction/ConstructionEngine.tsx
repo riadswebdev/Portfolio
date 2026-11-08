@@ -27,6 +27,7 @@ interface ActiveCursorState {
   actionText: string;
   isClicking: boolean;
   isWorking: boolean;
+  showLabel: boolean;
   opacity?: number;
 }
 
@@ -422,6 +423,7 @@ export default function ConstructionEngine() {
           actionText: actionLabel,
           isClicking,
           isWorking,
+          showLabel: false,
           opacity,
         });
       }
@@ -516,6 +518,7 @@ export default function ConstructionEngine() {
         actionText: `${actionLabel} (${Math.round(p * 100)}%)`,
         isClicking: p > 0.4 && p < 0.85,
         isWorking: p > 0.05 && p < 0.95,
+        showLabel: true,
       });
     }
 
@@ -730,6 +733,7 @@ export default function ConstructionEngine() {
             isClicking={c.isClicking}
             isVisible={true}
             isWorking={c.isWorking}
+            showLabel={c.showLabel}
             opacity={c.opacity}
           />
         ))}

@@ -11,6 +11,7 @@ interface AgentCursorProps {
   isClicking?: boolean;
   isVisible?: boolean;
   isWorking?: boolean;
+  showLabel?: boolean;
   opacity?: number;
 }
 
@@ -22,6 +23,7 @@ export const AgentCursor = memo(function AgentCursor({
   isClicking = false,
   isVisible = true,
   isWorking = true,
+  showLabel = true,
   opacity,
 }: AgentCursorProps) {
   if (!isVisible && opacity === undefined) return null;
@@ -94,12 +96,14 @@ export const AgentCursor = memo(function AgentCursor({
         )}
       </div>
 
-      {/* Ultra-compact, non-cluttering role tag */}
-      <div
-        className={`absolute flex items-center gap-1 transition-opacity duration-200 ${
-          isNearRightEdge ? "-left-14" : "left-4"
-        } ${isNearBottomEdge ? "-top-5" : "top-3"}`}
-      >
+      {/* Keep the 24-cursor swarm visually clean; active work cursors retain
+          compact role/action labels during normal construction. */}
+      {showLabel && (
+        <div
+          className={`absolute flex items-center gap-1 transition-opacity duration-200 ${
+            isNearRightEdge ? "-left-14" : "left-4"
+          } ${isNearBottomEdge ? "-top-5" : "top-3"}`}
+        >
         {/* Short Role Pill: UI, DEV, MOTION, QA etc */}
         <div
           className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded backdrop-blur-md border text-[9px] font-mono font-bold text-white shadow-md leading-none"
@@ -122,7 +126,8 @@ export const AgentCursor = memo(function AgentCursor({
             {actionText}
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 });

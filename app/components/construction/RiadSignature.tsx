@@ -28,10 +28,10 @@ export const SIGNATURE_TARGET_OFFSETS: [number, number, string][] = [
   [124, 20, "Arc D"],
   [108, 32, "Curve D"],
   // Star ✨ (4 agents)
-  [138, 12, "Star ↑"],
-  [144, 18, "Star →"],
-  [138, 24, "Star ↓"],
-  [132, 18, "Star ←"],
+  [138, 8, "Star ↑"],
+  [148, 18, "Star →"],
+  [138, 28, "Star ↓"],
+  [128, 18, "Star ←"],
 ];
 
 interface RiadSignatureProps {
@@ -46,12 +46,11 @@ export const RiadSignature = memo(function RiadSignature({
   if (!isVisible && progress === 0) return null;
 
   const normalizedProgress = Math.min(Math.max(progress, 0), 1);
-  const rOffset = (1 - normalizedProgress) * 140;
-  const iOffset = (1 - normalizedProgress) * 90;
-  const aOffset = (1 - normalizedProgress) * 120;
-  const dOffset = (1 - normalizedProgress) * 130;
+  // SVG pathLength normalizes each glyph, so the same progress value reveals
+  // the complete actual path instead of relying on guessed pixel lengths.
+  const letterOffset = 1 - normalizedProgress;
   const starProgress = Math.min(Math.max((normalizedProgress - 0.72) / 0.28, 0), 1);
-  const starOffset = (1 - starProgress) * 36;
+  const starOffset = 1 - starProgress;
 
   return (
     <div
@@ -91,8 +90,9 @@ export const RiadSignature = memo(function RiadSignature({
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="140"
-            strokeDashoffset={rOffset}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset={letterOffset}
             filter="url(#sig-glow)"
           />
 
@@ -103,8 +103,9 @@ export const RiadSignature = memo(function RiadSignature({
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="90"
-            strokeDashoffset={iOffset}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset={letterOffset}
             filter="url(#sig-glow)"
           />
 
@@ -115,8 +116,9 @@ export const RiadSignature = memo(function RiadSignature({
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="120"
-            strokeDashoffset={aOffset}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset={letterOffset}
             filter="url(#sig-glow)"
           />
 
@@ -127,8 +129,9 @@ export const RiadSignature = memo(function RiadSignature({
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="130"
-            strokeDashoffset={dOffset}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset={letterOffset}
             filter="url(#sig-glow)"
           />
 
@@ -139,7 +142,8 @@ export const RiadSignature = memo(function RiadSignature({
             stroke="#38bdf8"
             strokeWidth="2"
             strokeLinejoin="round"
-            strokeDasharray="36"
+            pathLength={1}
+            strokeDasharray="1"
             strokeDashoffset={starOffset}
             className="animate-pulse"
           />
