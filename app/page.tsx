@@ -103,6 +103,7 @@ export default function Home() {
             {/* Status badge */}
             <motion.div
               variants={fadeInUp}
+              data-construction-target="hero-badge"
               className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-blue-500/8 border border-blue-500/20 text-xs font-mono text-blue-400 backdrop-blur-sm"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
@@ -112,7 +113,11 @@ export default function Home() {
             </motion.div>
 
             {/* Headline */}
-            <motion.div variants={fadeInUp} className="space-y-3">
+            <motion.div
+              variants={fadeInUp}
+              data-construction-target="hero-headline"
+              className="space-y-3"
+            >
               <p className="text-white text-sm sm:text-base font-mono tracking-wider uppercase">
                 Hi, I&apos;m
               </p>
@@ -143,6 +148,7 @@ export default function Home() {
             {/* CTA Buttons */}
             <motion.div
               variants={fadeInUp}
+              data-construction-target="hero-cta"
               className="flex flex-wrap gap-3 items-center pt-2"
             >
               <Link
@@ -219,6 +225,7 @@ export default function Home() {
           {/* Right Column — Engaging Interactive Visual Element */}
           <motion.div
             className="lg:col-span-5 relative flex justify-center"
+            data-construction-target="hero-card"
             initial={{ opacity: 0, scale: 0.9, x: 30 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
@@ -344,6 +351,7 @@ export default function Home() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
+          data-construction-target="milestones-grid"
           className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 sm:p-8 rounded-3xl bg-zinc-950/20 backdrop-blur-md"
         >
           {[
@@ -410,6 +418,7 @@ export default function Home() {
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={staggerContainer}
+          data-construction-target="capabilities-grid"
           className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5"
         >
           {[
@@ -490,7 +499,9 @@ export default function Home() {
           </p>
         </motion.div>
 
-        <GithubProjects username="riadswebdev" maxItems={3} />
+        <div data-construction-target="projects-grid">
+          <GithubProjects username="riadswebdev" maxItems={3} />
+        </div>
       </section>
 
       {/* ── Workflow / Engineering Approach ──────────────────────────────── */}
@@ -532,7 +543,10 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-4">
+          <div
+            className="lg:col-span-7 grid sm:grid-cols-2 gap-4"
+            data-construction-target="workflow-grid"
+          >
             {[
               {
                 step: "01",
@@ -585,6 +599,7 @@ export default function Home() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.5 }}
+          data-construction-target="contact-card"
           className="relative rounded-3xl border border-white/15 p-10 sm:p-20 overflow-hidden shadow-2xl backdrop-blur-md"
           style={{ background: "rgba(4, 6, 12, 0.55)" }}
         >
