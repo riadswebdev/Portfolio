@@ -6,6 +6,7 @@ import { AGENT_POOL, AgentProfile } from "./agentPool";
 import { AgentCursor } from "./AgentCursor";
 import { BorderTracingLayer, ActiveBorderTracing } from "./BorderTracingLayer";
 import { RiadSignature, SIGNATURE_TARGET_OFFSETS } from "./RiadSignature";
+import { getDocumentScrollMetrics, getPointOnElementPerimeter } from "./geometry";
 
 interface ManagedNode {
   el: HTMLElement;
@@ -55,6 +56,8 @@ export default function ConstructionEngine() {
   const scrollSettleTimeoutRef = useRef<number | null>(null);
   const signatureTimeoutRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  const animationLoopRef = useRef<number | null>(null);
+  const initialIdleSignatureScheduledRef = useRef(false);
   const isReducedMotionRef = useRef(false);
 
   // Drone swarm state refs
@@ -89,6 +92,7 @@ export default function ConstructionEngine() {
       "[style*='polygon']",
     ].join(", ");
 
+    const previousNodes = new Map(nodesRef.current.map((item) => [item.el, item]));
     const raw = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
     const vh = window.innerHeight;
     const scrollY = window.scrollY;
@@ -147,24 +151,34 @@ export default function ConstructionEngine() {
       el.setAttribute("data-construct-type", type);
 
       const inInitialViewport = rect.top < vh && rect.bottom > 0;
+      const previous = previousNodes.get(el);
       const initialP = isReducedMotionRef.current ? 1 : 0;
+      const progress = previous?.progress ?? initialP;
+      const isSettled = previous?.isSettled ?? false;
+      const wasInInitialViewport =
+        previous?.isInitialViewport ??
+        (!initialLoadDoneRef.current && inInitialViewport);
 
       el.setAttribute(
         "data-construct-state",
-        initialP >= 1 ? "constructed" : "unconstructed"
+        progress >= 0.999
+          ? "constructed"
+          : progress > 0.02
+            ? "constructing"
+            : "unconstructed"
       );
-      el.style.setProperty("--construct-p", String(initialP));
+      el.style.setProperty("--construct-p", String(progress));
 
       return {
         el,
         type,
         initialTop: absTop,
-        progress: initialP,
+        progress,
         borderRadius: br,
         isHexagon: isHex,
-        assignedAgentIndex: idx % AGENT_POOL.length,
-        isInitialViewport: inInitialViewport,
-        isSettled: false,
+        assignedAgentIndex: previous?.assignedAgentIndex ?? idx % AGENT_POOL.length,
+        isInitialViewport: wasInInitialViewport,
+        isSettled,
       };
     });
 
@@ -192,13 +206,16 @@ export default function ConstructionEngine() {
     }
 
     setActiveBorders([]);
+    setActiveCursors([]);
+    setActiveAgentCount(0);
   }, []);
 
   // Update construction progress, animated border tracing, and adaptive agent scheduling
   const updateConstruction = useCallback(() => {
     if (typeof window === "undefined" || isReducedMotionRef.current) return;
 
-    const scrollY = window.scrollY;
+    const scrollingElement = document.scrollingElement ?? document.documentElement;
+    const scrollY = Math.max(scrollingElement.scrollTop, window.scrollY);
     const vh = window.innerHeight;
     const vw = window.innerWidth;
     const viewportBottom = scrollY + vh;
@@ -208,22 +225,14 @@ export default function ConstructionEngine() {
     if (managed.length === 0) return;
 
     // Document bottom calculation & page scroll progress
-    const docEl = document.documentElement;
-    const body = document.body;
-    const scrollHeight = Math.max(docEl.scrollHeight, body.scrollHeight);
-    const clientHeight = window.innerHeight || docEl.clientHeight;
-    const maxScroll = Math.max(scrollHeight - clientHeight, 0);
-    const isAtBottom = maxScroll > 0 && scrollY >= maxScroll - 4;
-
-    let computedPageProgress = 0;
-    if (maxScroll <= 0 || isAtBottom) {
-      computedPageProgress = 100;
-    } else {
-      computedPageProgress = Math.min(
-        Math.max(Math.round((scrollY / maxScroll) * 100), 0),
-        99
-      );
-    }
+    const scrollMetrics = getDocumentScrollMetrics(
+      scrollY,
+      scrollingElement.scrollHeight,
+      scrollingElement.clientHeight || window.innerHeight,
+      2,
+    );
+    const isAtBottom = scrollMetrics.isAtBottom;
+    const computedPageProgress = scrollMetrics.progress;
 
     // Check splash screen
     const splashActive = document.querySelector(".splash-screen:not(.splash-screen--hide)");
@@ -296,7 +305,7 @@ export default function ConstructionEngine() {
 
       item.progress = p;
 
-      if (p >= 0.98) {
+      if (p >= 0.999) {
         item.el.setAttribute("data-construct-state", "constructed");
         item.el.style.setProperty("--construct-p", "1");
       } else if (p > 0.02) {
@@ -304,7 +313,7 @@ export default function ConstructionEngine() {
         item.el.style.setProperty("--construct-p", p.toFixed(3));
 
         // Only track in active tasks if visible in viewport
-        if (rect.top >= -80 && rect.bottom <= vh + 80) {
+        if (rect.bottom > 0 && rect.top < vh && rect.top >= -80 && rect.bottom <= vh + 80) {
           activeTasks.push({ node: item, rect, p });
         }
       } else {
@@ -480,46 +489,15 @@ export default function ConstructionEngine() {
         });
 
         // Compute perimeter cursor position
-        const w = rect.width;
-        const h = rect.height;
-
-        if (node.isHexagon) {
-          // Hexagon perimeter has 6 segments:
-          // (w/2, 0) -> (w, h/4) -> (w, 3h/4) -> (w/2, h) -> (0, 3h/4) -> (0, h/4) -> (w/2, 0)
-          const seg = p * 6;
-          const segIdx = Math.floor(seg);
-          const segT = seg - segIdx;
-          const pts = [
-            [w * 0.5, 0],
-            [w, h * 0.25],
-            [w, h * 0.75],
-            [w * 0.5, h],
-            [0, h * 0.75],
-            [0, h * 0.25],
-            [w * 0.5, 0],
-          ];
-          const startPt = pts[segIdx] || pts[0];
-          const endPt = pts[Math.min(segIdx + 1, 6)] || pts[0];
-          cursorX = rect.left + startPt[0] + (endPt[0] - startPt[0]) * segT;
-          cursorY = rect.top + startPt[1] + (endPt[1] - startPt[1]) * segT;
-        } else {
-          // Rounded rectangle perimeter traversal (top -> right -> bottom -> left)
-          const perim = 2 * (w + h);
-          const dist = p * perim;
-          if (dist <= w) {
-            cursorX = rect.left + dist;
-            cursorY = rect.top;
-          } else if (dist <= w + h) {
-            cursorX = rect.left + w;
-            cursorY = rect.top + (dist - w);
-          } else if (dist <= 2 * w + h) {
-            cursorX = rect.left + w - (dist - (w + h));
-            cursorY = rect.top + h;
-          } else {
-            cursorX = rect.left;
-            cursorY = rect.top + h - (dist - (2 * w + h));
-          }
-        }
+        const point = getPointOnElementPerimeter(
+          rect.width,
+          rect.height,
+          node.borderRadius,
+          node.isHexagon,
+          p,
+        );
+        cursorX = rect.left + point.x;
+        cursorY = rect.top + point.y;
 
         actionLabel = p < 0.8 ? "Tracing Border" : "Assembling";
       } else {
@@ -527,9 +505,9 @@ export default function ConstructionEngine() {
         actionLabel = "Typing Content";
       }
 
-      // Clamping inside viewport bounds
-      cursorX = Math.min(Math.max(16, cursorX), vw - 120);
-      cursorY = Math.min(Math.max(16, cursorY), vh - 40);
+      // Keep the pointer visible without pulling it away from the traced path.
+      cursorX = Math.min(Math.max(8, cursorX), Math.max(8, vw - 22));
+      cursorY = Math.min(Math.max(8, cursorY), Math.max(8, vh - 22));
 
       newActiveCursors.push({
         agent,
@@ -552,6 +530,7 @@ export default function ConstructionEngine() {
       const match = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       setReducedMotion(match);
       isReducedMotionRef.current = match;
+      if (match) initialLoadDoneRef.current = true;
     };
     checkMotion();
 
@@ -560,6 +539,7 @@ export default function ConstructionEngine() {
       setReducedMotion(e.matches);
       isReducedMotionRef.current = e.matches;
       if (e.matches) {
+        initialLoadDoneRef.current = true;
         nodesRef.current.forEach((item) => {
           item.el.setAttribute("data-construct-state", "constructed");
           item.el.style.setProperty("--construct-p", "1");
@@ -577,22 +557,83 @@ export default function ConstructionEngine() {
     // Reset on route transition
     initialLoadDoneRef.current = false;
     initialLoadStartTimeRef.current = null;
+    initialIdleSignatureScheduledRef.current = false;
     swarmPhaseRef.current = "idle";
     swarmStartTimeRef.current = null;
     dispersalStartTimeRef.current = null;
     setSignatureVisible(false);
     setSignatureProgress(0);
 
-    const timer = setTimeout(() => {
+    let disposed = false;
+    let registrationRaf: number | null = null;
+    let mutationObserver: MutationObserver | null = null;
+    let resizeObserver: ResizeObserver | null = null;
+
+    const startAnimationLoop = () => {
+      if (disposed || isReducedMotionRef.current || animationLoopRef.current !== null) return;
+      const tick = () => {
+        animationLoopRef.current = null;
+        if (disposed) return;
+        const wasInitialBuildPending = !initialLoadDoneRef.current;
+        const wasSwarming = swarmPhaseRef.current !== "idle";
+        updateConstruction();
+
+        if (wasInitialBuildPending && initialLoadDoneRef.current && !initialIdleSignatureScheduledRef.current) {
+          initialIdleSignatureScheduledRef.current = true;
+          settleVisibleViewport();
+          if (signatureTimeoutRef.current !== null) clearTimeout(signatureTimeoutRef.current);
+          signatureTimeoutRef.current = window.setTimeout(() => {
+            if (disposed || isScrollingRef.current || isReducedMotionRef.current) return;
+            setSignatureVisible(true);
+            swarmPhaseRef.current = "flying";
+            swarmStartTimeRef.current = performance.now();
+            startAnimationLoop();
+          }, 1400);
+        }
+
+        const shouldContinue =
+          !initialLoadDoneRef.current ||
+          swarmPhaseRef.current !== "idle" ||
+          wasSwarming;
+        if (shouldContinue && !disposed) animationLoopRef.current = requestAnimationFrame(tick);
+      };
+      animationLoopRef.current = requestAnimationFrame(tick);
+    };
+
+    const scheduleRegistration = () => {
+      if (registrationRaf !== null || disposed) return;
+      registrationRaf = window.requestAnimationFrame(() => {
+        registrationRaf = null;
+        if (disposed) return;
+        registerElements();
+        updateConstruction();
+      });
+    };
+
+    const timer = window.setTimeout(() => {
       registerElements();
       updateConstruction();
+      startAnimationLoop();
+
+      // Register late client-rendered content, including asynchronous project cards.
+      mutationObserver = new MutationObserver((records) => {
+        if (records.some((record) => record.addedNodes.length > 0)) scheduleRegistration();
+      });
+      mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+      // Images and late layout changes can move registered target bounds.
+      if (typeof ResizeObserver !== "undefined") {
+        resizeObserver = new ResizeObserver(scheduleRegistration);
+        resizeObserver.observe(document.body);
+      }
+      document.fonts?.ready.then(() => {
+        if (!disposed) scheduleRegistration();
+      });
     }, 150);
 
     const onScroll = () => {
       lastScrollTimeRef.current = Date.now();
       isScrollingRef.current = true;
-
-      // If we are currently in swarm mode, trigger radial dispersal
       if (
         swarmPhaseRef.current === "flying" ||
         swarmPhaseRef.current === "forming" ||
@@ -600,55 +641,70 @@ export default function ConstructionEngine() {
       ) {
         swarmPhaseRef.current = "dispersing";
         dispersalStartTimeRef.current = performance.now();
+        startAnimationLoop();
       }
 
-      if (scrollSettleTimeoutRef.current !== null) {
-        clearTimeout(scrollSettleTimeoutRef.current);
-      }
-      if (signatureTimeoutRef.current !== null) {
-        clearTimeout(signatureTimeoutRef.current);
-      }
+      if (scrollSettleTimeoutRef.current !== null) clearTimeout(scrollSettleTimeoutRef.current);
+      if (signatureTimeoutRef.current !== null) clearTimeout(signatureTimeoutRef.current);
 
-      // Settle visible elements after 650ms inactivity
       scrollSettleTimeoutRef.current = window.setTimeout(() => {
         isScrollingRef.current = false;
         settleVisibleViewport();
-
-        // After settled and idle for 1.4s: trigger full 24-agent drone swarm!
+        updateConstruction();
         signatureTimeoutRef.current = window.setTimeout(() => {
-          if (!isScrollingRef.current && !isReducedMotionRef.current) {
-            setSignatureVisible(true);
-            swarmPhaseRef.current = "flying";
-            swarmStartTimeRef.current = performance.now();
-          }
+          if (disposed || isScrollingRef.current || isReducedMotionRef.current) return;
+          setSignatureVisible(true);
+          swarmPhaseRef.current = "flying";
+          swarmStartTimeRef.current = performance.now();
+          startAnimationLoop();
         }, 1400);
       }, 650);
 
       if (rafRef.current !== null) return;
-      rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = window.requestAnimationFrame(() => {
         rafRef.current = null;
         updateConstruction();
       });
     };
 
-    let continuousLoopId: number;
-    const loop = () => {
+    const onResize = () => {
+      registerElements();
       updateConstruction();
-      continuousLoopId = requestAnimationFrame(loop);
     };
-    continuousLoopId = requestAnimationFrame(loop);
+    const onMediaLoad = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (target && /^(IMG|VIDEO)$/i.test(target.tagName)) scheduleRegistration();
+    };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", registerElements, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+    document.addEventListener("load", onMediaLoad, true);
 
     return () => {
-      clearTimeout(timer);
-      cancelAnimationFrame(continuousLoopId);
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      if (scrollSettleTimeoutRef.current !== null) clearTimeout(scrollSettleTimeoutRef.current);
-      if (signatureTimeoutRef.current !== null) clearTimeout(signatureTimeoutRef.current);
+      disposed = true;
+      window.clearTimeout(timer);
+      mutationObserver?.disconnect();
+      resizeObserver?.disconnect();
+      document.removeEventListener("load", onMediaLoad, true);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", registerElements);
+      window.removeEventListener("resize", onResize);
+      if (registrationRaf !== null) window.cancelAnimationFrame(registrationRaf);
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      if (animationLoopRef.current !== null) {
+        window.cancelAnimationFrame(animationLoopRef.current);
+        animationLoopRef.current = null;
+      }
+      if (scrollSettleTimeoutRef.current !== null) {
+        window.clearTimeout(scrollSettleTimeoutRef.current);
+        scrollSettleTimeoutRef.current = null;
+      }
+      if (signatureTimeoutRef.current !== null) {
+        window.clearTimeout(signatureTimeoutRef.current);
+        signatureTimeoutRef.current = null;
+      }
       if (typeof mediaQuery.removeEventListener === "function") {
         mediaQuery.removeEventListener("change", motionHandler);
       }

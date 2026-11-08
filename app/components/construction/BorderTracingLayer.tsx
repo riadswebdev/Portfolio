@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo } from "react";
+import { getElementPerimeter } from "./geometry";
 
 export interface ActiveBorderTracing {
   id: string;
@@ -59,20 +60,22 @@ export const BorderTracingLayer = memo(function BorderTracingLayer({
       {activeBorders.map((b) => {
         const pathD = getElementPathD(b.width, b.height, b.borderRadius, b.isHexagon);
 
-        // Approximate perimeter length
-        const perimeter = b.isHexagon
-          ? (b.width * 0.5 + b.height * 0.5) * 3
-          : (b.width + b.height) * 2;
-        const offset = (1 - Math.min(Math.max(b.progress, 0), 1)) * perimeter;
-
-        const isNearDone = b.progress >= 0.98;
+        const perimeter = getElementPerimeter(
+          b.width,
+          b.height,
+          b.borderRadius,
+          b.isHexagon,
+        );
+        const progress = Math.min(Math.max(b.progress, 0), 1);
+        const offset = (1 - progress) * perimeter;
+        const isComplete = progress >= 0.999;
 
         return (
           <g
             key={b.id}
             transform={`translate(${b.left}, ${b.top})`}
             style={{
-              opacity: isNearDone ? 0 : 1,
+              opacity: isComplete ? 0 : 1,
               transition: "opacity 200ms ease-out",
             }}
           >
