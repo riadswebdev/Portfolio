@@ -4,6 +4,8 @@ import {
   getDocumentScrollMetrics,
   getElementPerimeter,
   getPointOnElementPerimeter,
+  getElementVertices,
+  getCurvedTrajectoryPoint,
 } from "./geometry.ts";
 
 test("rounded rectangle perimeter includes four corner arcs", () => {
@@ -53,4 +55,27 @@ test("a non-scrollable document is considered fully reached", () => {
   const metrics = getDocumentScrollMetrics(0, 200, 200);
   assert.equal(metrics.progress, 100);
   assert.equal(metrics.isAtBottom, true);
+});
+
+test("element vertices provide anchor points for rectangle and hexagon", () => {
+  const rectVertices = getElementVertices(200, 100, 0, false);
+  assert.equal(rectVertices.length, 4);
+  assert.deepEqual(rectVertices[0], { x: 200, y: 0, threshold: 100 / 600 });
+
+  const hexVertices = getElementVertices(100, 80, 0, true);
+  assert.equal(hexVertices.length, 6);
+  assert.deepEqual(hexVertices[0], { x: 50, y: 0, threshold: 0 });
+});
+
+test("curved trajectory smoothly arcs away from linear path at midpoint", () => {
+  const start = getCurvedTrajectoryPoint(0, 0, 100, 0, 0);
+  const mid = getCurvedTrajectoryPoint(0, 0, 100, 0, 0.5, 1);
+  const end = getCurvedTrajectoryPoint(0, 0, 100, 0, 1);
+
+  assert.equal(start.x, 0);
+  assert.equal(start.y, 0);
+  assert.equal(mid.x, 50);
+  assert.ok(Math.abs(mid.y) > 5, "midpoint should have perpendicular bend");
+  assert.equal(end.x, 100);
+  assert.ok(Math.abs(end.y) < 1e-10);
 });

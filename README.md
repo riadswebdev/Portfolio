@@ -8,11 +8,11 @@ A polished, modern portfolio built with Next.js, React 19, TypeScript, Tailwind 
 - **Next.js App Router** with server and client components
 - **React 19.2.4** and **TypeScript** for strong typed UI development
 - **Tailwind CSS v4** plus glassmorphism, gradient-rich dark theme, responsive layout, and hover micro-interactions
-- **Framer Motion** for animated entrance effects, scroll motion, and card transitions
+- **Framer Motion** for animated entrance effects and card transitions
 - **@heroui/react / @heroui/styles** for modern component styling
-- **Custom cursor overlay** with hover states, magnetic card attraction, and click ripple feedback
+- **Custom cursor overlay** with one arrow-pointer silhouette and subtle hover feedback
 - **Animated splash screen** with timed fade-out
-- **Scroll-driven canvas frame animation** with progressive image preloading
+- **Viewport-only construction animation** with up to 24 uniquely leased workers, parallel visible work, and below-the-fold gating
 - **Live GitHub project viewer** that fetches repositories, parses README content, and filters by categories
 - **Contact page with form backend** using Nodemailer and Gmail credentials
 - **About page** with background video, career highlights, and polished profile presentation
@@ -22,8 +22,8 @@ A polished, modern portfolio built with Next.js, React 19, TypeScript, Tailwind 
 
 - `app/page.tsx` — homepage hero, feature cards, project preview, skills overview, and contact CTA
 - `app/layout.tsx` — global layout, custom fonts, splash screen, and custom cursor mount
-- `app/components/CustomCursor.tsx` — premium pointer experience with glass ring, pointer animation, and hover behavior
-- `app/components/FrameScrollAnimation.tsx` — image sequence canvas animation with smooth frame interpolation
+- `app/components/CustomCursor.tsx` — lightweight arrow pointer with hover feedback and no ring or click ripple
+- `app/components/construction/ConstructionEngine.tsx` — viewport-aware portfolio reconstruction
 - `app/components/GithubProjects.tsx` — GitHub API integration, repository parsing, searchable/filterable portfolio cards
 - `app/api/contact/route.ts` — contact POST route using Gmail and Nodemailer
 - `app/contact/ContactClient.tsx` — contact form UI with email, phone, WhatsApp, and social links
@@ -38,6 +38,8 @@ A polished, modern portfolio built with Next.js, React 19, TypeScript, Tailwind 
 - Custom animated hero panel with profile photo, status badge, and code-style snippet card
 - Polished homepage hero with clear CTA buttons, active availability indicator, and clean branding
 - Smooth scroll entrance animations across sections and stat cards
+- The construction layer snapshots the existing page, preserves its dark background and layout, and uses component drags, progressive text, media reveals, and master/copy placement
+- Section-specific frame-sequence scroll animations have been removed; the swarm only works on targets in the current viewport
 - Video-backed layouts on About and Contact pages for immersive depth
 - Live project cards powered by GitHub repository data and parsed README metadata
 - Skill section using animated circular progress rings, marquees, and six core technology cards on the homepage

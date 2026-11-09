@@ -8,14 +8,6 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Link from "next/link";
 
-const FrameScrollAnimation = dynamic(
-  () => import("./components/FrameScrollAnimation"),
-  {
-    ssr: false,
-    loading: () => null,
-  },
-);
-
 const SkillsOverview = dynamic(() => import("./components/SkillsOverview"), {
   ssr: false,
   loading: () => null,
@@ -83,9 +75,7 @@ export default function Home() {
         onSectionChange={setActiveSection}
       />
 
-      {/* Canvas frame animation — fixed background, driven by page scroll */}
-      <FrameScrollAnimation backgroundMode />
-
+      <main>
       {/* ── Hero Section ─────────────────────────────────────────────────── */}
       <section className="relative pt-32 pb-16 md:pt-40 md:pb-24 px-6 max-w-7xl mx-auto overflow-hidden">
         {/* Ambient glow orb */}
@@ -678,6 +668,8 @@ export default function Home() {
           </div>
         </motion.div>
       </section>
+
+      </main>
 
       {/* Footer */}
       <Footer />

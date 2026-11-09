@@ -1,4 +1,5 @@
 export interface PerimeterPoint { x: number; y: number; }
+export interface VertexAnchor { x: number; y: number; threshold: number; }
 export interface DocumentScrollMetrics {
   scrollTop: number; scrollHeight: number; clientHeight: number;
   maxScroll: number; remaining: number; isAtBottom: boolean; progress: number;
@@ -78,4 +79,59 @@ export function getDocumentScrollMetrics(scrollTopValue:number,scrollHeightValue
   const isAtBottom=maxScroll<=tolerance||remaining<=tolerance;
   const progress=isAtBottom?100:Math.min(99,Math.max(0,Math.round((scrollTop/maxScroll)*100)));
   return {scrollTop,scrollHeight,clientHeight,maxScroll,remaining,isAtBottom,progress};
+}
+
+/** Return key vertex anchors along perimeter for pen-tool vector editing display */
+export function getElementVertices(
+  width: number,
+  height: number,
+  borderRadius: number,
+  isHexagon: boolean
+): VertexAnchor[] {
+  const w = Math.max(0, width);
+  const h = Math.max(0, height);
+  if (!w || !h) return [];
+
+  if (isHexagon) {
+    return [
+      { x: w * 0.5, y: 0, threshold: 0 },
+      { x: w, y: h * 0.25, threshold: 0.166 },
+      { x: w, y: h * 0.75, threshold: 0.333 },
+      { x: w * 0.5, y: h, threshold: 0.5 },
+      { x: 0, y: h * 0.75, threshold: 0.666 },
+      { x: 0, y: h * 0.25, threshold: 0.833 },
+    ];
+  }
+
+  const perimeter = 2 * (w + h);
+  if (perimeter <= 0) return [];
+
+  return [
+    { x: w, y: 0, threshold: (w * 0.5) / perimeter },
+    { x: w, y: h, threshold: (w + h) / perimeter },
+    { x: 0, y: h, threshold: (2 * w + h) / perimeter },
+    { x: 0, y: 0, threshold: (2 * w + 2 * h) / perimeter },
+  ];
+}
+
+/** Perpendicular normal curved trajectory inspired by Swarm Rebuild moveTo physics */
+export function getCurvedTrajectoryPoint(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  progress: number,
+  bendDirection: number = 1
+): { x: number; y: number } {
+  const p = clamp01(progress);
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const dist = Math.hypot(dx, dy) || 1;
+  const bend = Math.sin(Math.PI * p) * Math.min(dist * 0.18, 36) * bendDirection;
+  const nx = -dy / dist;
+  const ny = dx / dist;
+  return {
+    x: x0 + dx * p + nx * bend,
+    y: y0 + dy * p + ny * bend,
+  };
 }

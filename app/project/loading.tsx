@@ -1,19 +1,9 @@
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import FrameScrollAnimation from "../components/FrameScrollAnimation";
 
 export default function Loading() {
   return (
     <div className="min-h-screen text-zinc-100 font-sans flex flex-col justify-between">
-      {/* Scroll-driven frame animation — fixed background remains active during route load */}
-      <FrameScrollAnimation
-        backgroundMode
-        totalFrames={116}
-        folderPath="/projectScrollAnimation"
-        filePrefix="ezgif-frame-"
-        fileExtension="png"
-      />
-
       <Navbar activeSection="projects" />
 
       <main className="pt-24 pb-16">

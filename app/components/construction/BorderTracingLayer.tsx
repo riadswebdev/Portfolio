@@ -1,7 +1,11 @@
 "use client";
 
 import React, { memo } from "react";
-import { getElementPerimeter } from "./geometry";
+import {
+  getElementPerimeter,
+  getPointOnElementPerimeter,
+  getElementVertices,
+} from "./geometry";
 
 export interface ActiveBorderTracing {
   id: string;
@@ -69,6 +73,14 @@ export const BorderTracingLayer = memo(function BorderTracingLayer({
         const progress = Math.min(Math.max(b.progress, 0), 1);
         const offset = (1 - progress) * perimeter;
         const isComplete = progress >= 0.999;
+        const vertices = getElementVertices(b.width, b.height, b.borderRadius, b.isHexagon);
+        const currentTip = getPointOnElementPerimeter(
+          b.width,
+          b.height,
+          b.borderRadius,
+          b.isHexagon,
+          progress,
+        );
 
         return (
           <g
@@ -100,6 +112,57 @@ export const BorderTracingLayer = memo(function BorderTracingLayer({
               strokeDashoffset={offset}
               filter={`url(#glow-${b.id})`}
             />
+
+            {/* Vector Vertex Anchor Points reached during pen construction */}
+            {vertices.map((v, i) => {
+              const reached = progress >= v.threshold;
+              if (!reached) return null;
+              return (
+                <g key={`vertex-${b.id}-${i}`}>
+                  <circle
+                    cx={v.x}
+                    cy={v.y}
+                    r="3.5"
+                    fill="#ffffff"
+                    stroke={b.color}
+                    strokeWidth="1.6"
+                    filter={`url(#glow-${b.id})`}
+                  />
+                  <circle
+                    cx={v.x}
+                    cy={v.y}
+                    r="1.2"
+                    fill={b.color}
+                  />
+                </g>
+              );
+            })}
+
+            {/* Active Pen Tool Nib Indicator on the Path Tip */}
+            {!isComplete && (
+              <g>
+                <circle
+                  cx={currentTip.x}
+                  cy={currentTip.y}
+                  r="4.2"
+                  fill={b.color}
+                  stroke="#ffffff"
+                  strokeWidth="1.8"
+                  filter={`url(#glow-${b.id})`}
+                />
+                <circle
+                  cx={currentTip.x}
+                  cy={currentTip.y}
+                  r="7"
+                  fill="none"
+                  stroke={b.color}
+                  strokeWidth="1"
+                  opacity="0.6"
+                  className="animate-ping"
+                  style={{ transformOrigin: `${currentTip.x}px ${currentTip.y}px` }}
+                />
+              </g>
+            )}
           </g>
         );
       })}

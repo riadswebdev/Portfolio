@@ -1,101 +1,80 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { AGENT_POOL, AgentProfile } from "./agentPool";
-import { AgentCursor } from "./AgentCursor";
-import { BorderTracingLayer, ActiveBorderTracing } from "./BorderTracingLayer";
-import { RiadSignature } from "./RiadSignature";
+import { useCallback, useEffect, useRef, useState } from "react";
+import "./construction.css";
+import { AGENT_POOL } from "./agentPool";
+import SwarmCursorLayer from "./SwarmCursorLayer";
+import { getCurvedTrajectoryPoint } from "./geometry";
 import {
-  getPointOnElementPerimeter,
-  getDocumentScrollMetrics,
-} from "./geometry";
-import {
-  type BuildStage,
-  CREW_COUNT,
-  getCrewAgent,
-  getStageAction,
-  getWorkflowSnapshot,
-  easeInOutCubic,
-  isWithinConstructionViewport,
-  MAX_ACTIVE_CREWS,
-  type WorkflowState,
+  getConstructionProgress,
+  getEligibleTasks,
+  getLeasedAgentIds,
+  getTaskDuration,
+  getTaskProgress,
+  getTaskWorkerDemand,
+  isWithinViewport,
+  MAX_ACTIVE_AGENTS,
+  selectAvailableAgents,
+  spreadTasksAcrossViewport,
+  type ConstructionTaskKind,
+  type ViewportRect,
 } from "./workflow";
-import {
-  getSignatureStrokePoint,
-} from "./signaturePaths";
 
-type NodeType = "heading" | "text" | "card" | "button" | "image" | "input";
-type SwarmPhase = "idle" | "flying" | "tracing" | "holding" | "dispersing";
+type TaskState = "idle" | "queued" | "working" | "done";
+type ConstructionPhase =
+  | "INTRO_GATHER"
+  | "FAN_OUT"
+  | "VIEWPORT_BUILD"
+  | "VIEWPORT_IDLE"
+  | "FLOCK";
 
-interface ManagedNode {
-  id: string;
-  el: HTMLElement;
-  type: NodeType;
-  sectionId: string;
-  sectionLabel: string;
-  label: string;
-  borderRadius: number;
-  isHexagon: boolean;
-  stage: WorkflowState;
-  elapsedMs: number;
-  progress: number;
-  crewIndex: number | null;
-  lastTickAt: number | null;
+interface TextFragment {
+  node: Text;
+  text: string;
 }
 
-interface ActiveCursorState {
-  agent: AgentProfile;
+interface TaskDraft {
+  source: HTMLElement;
+  duplicateGroup: HTMLElement | null;
+}
+
+interface ConstructionTask {
+  id: string;
+  source: HTMLElement;
+  mirror: HTMLElement;
+  label: string;
+  kind: ConstructionTaskKind;
+  duplicateOf?: string;
+  master?: ConstructionTask;
+  state: TaskState;
+  elapsedMs: number;
+  durationMs: number;
+  workerIds: string[];
+  lastTickAt: number | null;
+  fragments: TextFragment[];
+  ghostFragments: TextFragment[] | null;
+  rect: ViewportRect;
+  ghost: HTMLElement | null;
+  selection: HTMLDivElement | null;
+  caret: HTMLDivElement | null;
+  travelStartedAt: number | null;
+  travelOrigin: { x: number; y: number };
+  travelTarget: { x: number; y: number };
+}
+
+interface ReconstructionRoot {
+  source: HTMLElement;
+  mirror: HTMLElement;
+  visibility: string;
+  visibilityPriority: string;
+}
+
+interface ActiveCursor {
+  agent: (typeof AGENT_POOL)[number];
   x: number;
   y: number;
-  actionText: string;
-  isClicking: boolean;
-  isWorking: boolean;
-  showLabel: boolean;
-  roleLabel?: string;
-  cursorSize?: number;
-  opacity?: number;
-}
-
-interface SelectionOverlay {
-  id: string;
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  color: string;
-  label: string;
-  stage: "mark" | "qa";
-  progress: number;
-}
-
-interface ConstructionParcel {
-  id: string;
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  label: string;
-  color: string;
-  progress: number;
-}
-
-interface ConstructionPaintGrid {
-  id: string;
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  columns: number;
-  rows: number;
-  progress: number;
-  color: string;
-}
-
-interface ActivityEntry {
-  id: number;
-  text: string;
-  color: string;
+  isPressed?: boolean;
 }
 
 interface PipelineStats {
@@ -104,66 +83,363 @@ interface PipelineStats {
   done: number;
 }
 
-const isActiveStage = (stage: WorkflowState): stage is BuildStage =>
-  stage === "mark" || stage === "make" || stage === "paint" || stage === "qa";
+interface ActivityEntry {
+  id: number;
+  text: string;
+  color: string;
+}
 
-const CARD_SELECTOR =
-  ".card, [class*='rounded-2xl'], [class*='rounded-3xl'], [class*='rounded-xl']";
-
-const CONSTRUCTION_SELECTOR = [
-  "main h1",
-  "main h2",
-  "main h3",
-  "main p",
-  "main a[href]",
-  "main button",
-  "main img",
-  "main form input",
-  "main form textarea",
-  "main [data-construct='true']",
-  "main .card",
-  "main [class*='rounded-2xl']",
-  "main [class*='rounded-3xl']",
-  "main [class*='rounded-xl']",
-  "main [style*='polygon']",
-  "footer h1",
-  "footer h2",
-  "footer p",
-  "footer a[href]",
-  "footer button",
-  "footer [class*='rounded-2xl']",
-].join(", ");
-
-const STAGE_COLORS: Record<BuildStage, string> = {
-  mark: "#38bdf8",
-  make: "#a78bfa",
-  paint: "#f59e0b",
-  qa: "#34d399",
-};
-
-const stageLabel = (stage: BuildStage): string => stage.toUpperCase();
-
-const getElementLabel = (el: HTMLElement, fallback: string): string => {
-  const text = (el.innerText || el.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim();
-  if (text) return text.slice(0, 32);
-  if (el.tagName.toLowerCase() === "img") return el.getAttribute("alt") || "Image asset";
-  return fallback;
-};
-
-const isCardCandidate = (el: HTMLElement): boolean =>
-  el.matches(CARD_SELECTOR);
+const ROOT_SELECTOR = "header, main, footer";
+const MIRROR_EXCLUDED_ATTRIBUTES = [
+  "id",
+  "name",
+  "data-construction-target",
+  "data-construct-id",
+  "data-construct-node",
+  "data-construct-type",
+  "data-construct-state",
+  "data-construct-stage",
+  "data-construct-lock",
+  "data-construct-owner",
+];
+const ACTIVE_COLOR = "#38bdf8";
+const MAX_SNAPSHOT_WAIT_MS = 900;
+const CURSOR_TRAVEL_MS = 320;
+const COMPONENT_DRAG_PROGRESS = 0.3;
+const DUPLICATE_EDIT_PROGRESS = 0.68;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
 
+function getTaskLabel(element: HTMLElement): string {
+  const text = (element.innerText || element.getAttribute("aria-label") || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.slice(0, 40) || element.getAttribute("data-construction-target") || "Page element";
+}
+
+function getStructureSignature(element: HTMLElement): string {
+  const colorUtility =
+    /^(?:text|bg|border|from|via|to|ring|shadow|decoration|fill|stroke)-(?:black|white|transparent|current|inherit|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-|\/|$)/;
+  const getStructuralClasses = (node: Element) =>
+    Array.from(node.classList)
+      .filter((name) => !colorUtility.test(name.split(":").at(-1) ?? name))
+      .sort()
+      .join(".");
+  const style = window.getComputedStyle(element);
+  const children = Array.from(element.children)
+    .slice(0, 12)
+    .map((child) => `${child.tagName.toLowerCase()}.${getStructuralClasses(child)}`)
+    .join("|");
+  const computedShape = [
+    style.display,
+    style.flexDirection,
+    style.gridTemplateColumns,
+    style.gap,
+    style.padding,
+    style.borderRadius,
+    style.borderStyle,
+    style.borderWidth,
+    style.boxShadow,
+  ].join(";");
+  const className = getStructuralClasses(element);
+  return `${element.tagName.toLowerCase()}.${className}[${children}]{${computedShape}}`;
+}
+
+function getTaskKind(element: HTMLElement): ConstructionTaskKind {
+  if (element.matches("hr, [data-construction-kind='line']")) return "line";
+  if (element.matches("img, picture, video, canvas, svg")) return "media";
+  if (element.matches("h1, h2, h3, h4, h5, h6, p")) return "text";
+
+  const hasMediaOrControls = element.querySelector(
+    "img, picture, video, canvas, svg, button, input, textarea, select, [role='button']",
+  );
+  const elements = [element, ...Array.from(element.querySelectorAll<HTMLElement>("*"))];
+  const hasPaintedSurface = elements.some((child) => {
+    const style = window.getComputedStyle(child);
+    const backgroundColor = style.backgroundColor.replace(/\s+/g, "");
+    const backgroundAlpha =
+      backgroundColor === "transparent" || backgroundColor.endsWith(",0)")
+        ? 0
+        : 1;
+    return (
+      backgroundAlpha > 0 ||
+      (style.borderStyle !== "none" &&
+        style.borderWidth.split(" ").some((width) => parseFloat(width) > 0)) ||
+      style.boxShadow !== "none"
+    );
+  });
+
+  return !hasMediaOrControls && !hasPaintedSurface ? "text" : "component";
+}
+
+function getTaskDrafts(): TaskDraft[] {
+  const drafts: TaskDraft[] = [];
+  const seen = new Set<HTMLElement>();
+
+  const add = (element: HTMLElement, duplicateGroup: HTMLElement | null) => {
+    if (seen.has(element)) return;
+    const rect = element.getBoundingClientRect();
+    const isLine = element.matches("hr, [data-construction-kind='line']");
+    if (isLine ? rect.width <= 24 || rect.height <= 0 : rect.width <= 24 || rect.height <= 18) {
+      return;
+    }
+    if (
+      element.closest(
+        "#construction-hud, #agent-activity-log, .splash-screen, [data-construction-ignore], .construction-reconstruction-layer",
+      )
+    ) {
+      return;
+    }
+
+    seen.add(element);
+    drafts.push({ source: element, duplicateGroup });
+  };
+
+  const visit = (
+    element: HTMLElement,
+    includeUnmarked: boolean,
+    duplicateGroup: HTMLElement | null = null,
+  ) => {
+    const children = Array.from(element.children).filter(
+      (child): child is HTMLElement => child instanceof HTMLElement,
+    );
+    for (const child of children) {
+      if (child.matches("hr, [data-construction-kind='line']")) {
+        add(child, null);
+      }
+    }
+    const hasNestedTarget = Boolean(
+      element.querySelector("[data-construction-target]"),
+    );
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    const isLayoutGroup =
+      children.length > 1 &&
+      (style.display.includes("grid") ||
+        style.display.includes("flex") ||
+        rect.height > window.innerHeight * 0.9);
+
+    if (element.tagName.toLowerCase() === "main") {
+      for (const child of children) visit(child, true, duplicateGroup);
+      return;
+    }
+
+    if (duplicateGroup && !hasNestedTarget) {
+      add(element, duplicateGroup);
+      return;
+    }
+
+    if (isLayoutGroup) {
+      const visibleChildren = children.filter((child) => {
+        const childRect = child.getBoundingClientRect();
+        return childRect.width > 40 && childRect.height > 32;
+      });
+      if (visibleChildren.length > 1) {
+        for (const child of visibleChildren) visit(child, true, element);
+        return;
+      }
+    }
+
+    if (hasNestedTarget) {
+      for (const child of children) visit(child, true, duplicateGroup);
+      return;
+    }
+
+    if (includeUnmarked || element.hasAttribute("data-construction-target")) {
+      add(element, duplicateGroup);
+    }
+  };
+
+  const roots = Array.from(
+    document.querySelectorAll<HTMLElement>(ROOT_SELECTOR),
+  ).filter((root) => !root.parentElement?.closest(ROOT_SELECTOR));
+
+  for (const root of roots) {
+    if (root.tagName.toLowerCase() === "main") {
+      for (const child of Array.from(root.children)) {
+        if (child instanceof HTMLElement) visit(child, true);
+      }
+    } else {
+      add(root, null);
+    }
+  }
+
+  return drafts;
+}
+
+function getTextFragments(element: HTMLElement): TextFragment[] {
+  const fragments: TextFragment[] = [];
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    fragments.push({ node: node as Text, text: node.textContent ?? "" });
+    node = walker.nextNode();
+  }
+  return fragments;
+}
+
+function setTextProgress(fragments: TextFragment[], progress: number) {
+  const totalLength = fragments.reduce(
+    (total, fragment) => total + fragment.text.length,
+    0,
+  );
+  let remaining = Math.floor(totalLength * clamp(progress, 0, 1));
+
+  for (const fragment of fragments) {
+    const visibleLength = Math.min(fragment.text.length, remaining);
+    fragment.node.textContent = fragment.text.slice(0, visibleLength);
+    remaining -= visibleLength;
+  }
+}
+
+function getCaretRect(fragments: TextFragment[], progress: number): DOMRect | null {
+  let remaining = Math.floor(
+    fragments.reduce((total, fragment) => total + fragment.text.length, 0) *
+      clamp(progress, 0, 1),
+  );
+
+  for (const fragment of fragments) {
+    const visibleLength = Math.min(
+      fragment.node.textContent?.length ?? 0,
+      fragment.text.length,
+      Math.max(0, remaining),
+    );
+    if (fragment.text.length > 0 && remaining <= fragment.text.length) {
+      const range = document.createRange();
+      range.setStart(fragment.node, visibleLength);
+      range.setEnd(fragment.node, visibleLength);
+      const rect = range.getBoundingClientRect();
+      if (rect.height > 0) return rect;
+    }
+    remaining = Math.max(0, remaining - fragment.text.length);
+  }
+
+  const first = fragments.find((fragment) => fragment.node.textContent?.length);
+  if (!first) return null;
+  const range = document.createRange();
+  range.selectNodeContents(first.node);
+  return range.getBoundingClientRect();
+}
+
+function setSubtreeVisibility(element: HTMLElement, visible: boolean) {
+  const value = visible ? "visible" : "hidden";
+  element.style.setProperty("visibility", value, "important");
+  element
+    .querySelectorAll<HTMLElement>("*")
+    .forEach((child) => child.style.setProperty("visibility", value, "important"));
+}
+
+function rectFromElement(element: HTMLElement): ViewportRect {
+  const rect = element.getBoundingClientRect();
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+function getBrandAnchor() {
+  const brand = document.querySelector<HTMLElement>('header a[href="/"]');
+  const rect = brand?.getBoundingClientRect();
+
+  return rect
+    ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+    : { x: window.innerWidth / 2, y: 36 };
+}
+
+function getTaskStart(task: ConstructionTask) {
+  if (task.kind === "duplicate" && task.master) {
+    const rect = task.master.mirror.getBoundingClientRect();
+    return { x: rect.left, y: rect.top };
+  }
+  if (task.kind === "text") {
+    const rect = getCaretRect(task.fragments, 0);
+    if (rect) return { x: rect.left, y: rect.top + rect.height / 2 };
+  }
+  const rect = task.mirror.getBoundingClientRect();
+  return { x: rect.left, y: rect.top };
+}
+
+function createSelection(task: ConstructionTask) {
+  const selection = document.createElement("div");
+  selection.setAttribute("data-build-selection", task.id);
+  selection.setAttribute("aria-hidden", "true");
+  selection.inert = true;
+  selection.style.cssText =
+    "position:fixed;box-sizing:border-box;pointer-events:none;z-index:101;border:1px dashed rgba(56,189,248,.95);background:rgba(56,189,248,.08);overflow:visible;";
+  const measurement = document.createElement("span");
+  measurement.style.cssText =
+    "position:absolute;left:0;top:-20px;white-space:nowrap;padding:2px 4px;border-radius:3px;background:rgba(9,18,31,.92);color:#bae6fd;font:10px/1.2 ui-monospace,monospace;";
+  selection.appendChild(measurement);
+  return selection;
+}
+
+function updateSelection(task: ConstructionTask, progress: number) {
+  if (!task.selection) return;
+  const rect = task.mirror.getBoundingClientRect();
+  const width = Math.max(0, rect.width * progress);
+  const height = Math.max(0, rect.height * progress);
+  task.selection.style.left = `${rect.left}px`;
+  task.selection.style.top = `${rect.top}px`;
+  task.selection.style.width = `${width}px`;
+  task.selection.style.height = `${height}px`;
+  const measurement = task.selection.firstElementChild;
+  if (measurement) {
+    measurement.textContent = `${Math.round(width)} × ${Math.round(height)}`;
+    measurement.setAttribute("aria-hidden", "true");
+  }
+}
+
+function updateCaret(task: ConstructionTask, progress: number) {
+  if (!task.caret) return;
+  const rect = getCaretRect(task.fragments, progress) ?? task.mirror.getBoundingClientRect();
+  task.caret.style.left = `${rect.left}px`;
+  task.caret.style.top = `${rect.top}px`;
+  task.caret.style.height = `${Math.max(14, rect.height)}px`;
+}
+
+function setDuplicateText(task: ConstructionTask, progress: number) {
+  if (!task.ghostFragments) return;
+  task.ghostFragments.forEach((ghost, index) => {
+    const destination = task.fragments[index];
+    if (!destination || ghost.text === destination.text) return;
+    const visibleLength = Math.floor(destination.text.length * clamp(progress, 0, 1));
+    ghost.node.textContent = destination.text.slice(0, visibleLength);
+  });
+  if (progress >= 0.5 && task.ghost && task.mirror) {
+    const sourceImages = task.mirror.querySelectorAll("img");
+    const ghostImages = task.ghost.querySelectorAll("img");
+    sourceImages.forEach((image, index) => {
+      const ghostImage = ghostImages[index];
+      if (ghostImage && ghostImage.getAttribute("src") !== image.getAttribute("src")) {
+        ghostImage.setAttribute("src", image.getAttribute("src") ?? "");
+        const srcSet = image.getAttribute("srcset");
+        if (srcSet) ghostImage.setAttribute("srcset", srcSet);
+        else ghostImage.removeAttribute("srcset");
+      }
+    });
+  }
+}
+
+function completeRevealMotion(source: HTMLElement, mirror: HTMLElement) {
+  if (source.style.opacity !== "0") return;
+  mirror.style.setProperty("opacity", "1", "important");
+  if (source.style.transform) {
+    mirror.style.setProperty("transform", "none", "important");
+  }
+}
+
 export default function ConstructionEngine() {
   const pathname = usePathname();
-
-  const [activeCursors, setActiveCursors] = useState<ActiveCursorState[]>([]);
-  const [activeBorders, setActiveBorders] = useState<ActiveBorderTracing[]>([]);
-  const [selectionOverlays, setSelectionOverlays] = useState<SelectionOverlay[]>([]);
-  const [constructionParcels, setConstructionParcels] = useState<ConstructionParcel[]>([]);
-  const [constructionPaintGrids, setConstructionPaintGrids] = useState<ConstructionPaintGrid[]>([]);
+  const [activeCursors, setActiveCursors] = useState<ActiveCursor[]>([]);
+  const [isRoaming, setIsRoaming] = useState(false);
+  const [hasSnapshot, setHasSnapshot] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [isSkipped, setIsSkipped] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [phase, setPhase] = useState<ConstructionPhase>("INTRO_GATHER");
   const [pageProgress, setPageProgress] = useState(0);
   const [pipelineStats, setPipelineStats] = useState<PipelineStats>({
     working: 0,
@@ -171,1002 +447,1150 @@ export default function ConstructionEngine() {
     done: 0,
   });
   const [activityLog, setActivityLog] = useState<ActivityEntry[]>([]);
-  const [signatureVisible, setSignatureVisible] = useState(false);
-  const [signatureProgress, setSignatureProgress] = useState(0);
-  const [signatureOpacity, setSignatureOpacity] = useState(1);
-  const [signaturePosition, setSignaturePosition] = useState({
-    left: 0,
-    top: 0,
-    width: 320,
-  });
-  const [isMounted, setIsMounted] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
 
-  const nodesRef = useRef<ManagedNode[]>([]);
-  const nextCrewIndexRef = useRef(0);
-  const logSequenceRef = useRef(0);
-  const activityLogRef = useRef<ActivityEntry[]>([]);
-  const isReducedMotionRef = useRef(false);
-  const isScrollingRef = useRef(false);
-  const hasVisibleWorkRef = useRef(false);
-  const signatureHasPlayedRef = useRef(false);
-  const signatureTimeoutRef = useRef<number | null>(null);
-  const scrollSettleTimeoutRef = useRef<number | null>(null);
+  const layerRef = useRef<HTMLDivElement | null>(null);
+  const rootsRef = useRef<ReconstructionRoot[]>([]);
+  const tasksRef = useRef<ConstructionTask[]>([]);
   const rafRef = useRef<number | null>(null);
-  const scheduleAnimationRef = useRef<() => void>(() => undefined);
+  const replayTimerRef = useRef<number | null>(null);
+  const nextAgentRef = useRef(0);
+  const activityIdRef = useRef(0);
+  const lastCursorUpdateRef = useRef(0);
+  const isCompleteRef = useRef(false);
+  const phaseRef = useRef<ConstructionPhase>("INTRO_GATHER");
+  const scrollVelocityRef = useRef(0);
+  const scrollVelocityAtRef = useRef(0);
+  const lastScrollSamplesRef = useRef(
+    new WeakMap<EventTarget, { position: number; time: number }>(),
+  );
+  const reducedMotionRef = useRef(false);
+  const scheduleRef = useRef<() => void>(() => undefined);
+  const activityRef = useRef<ActivityEntry[]>([]);
 
-  const swarmPhaseRef = useRef<SwarmPhase>("idle");
-  const swarmStartTimeRef = useRef<number | null>(null);
-  const dispersalStartTimeRef = useRef<number | null>(null);
-  const swarmPositionsRef = useRef<Array<{ x: number; y: number }>>([]);
-  const swarmDispersalOriginsRef = useRef<Array<{ x: number; y: number }>>([]);
+  const transitionPhase = useCallback((next: ConstructionPhase) => {
+    if (phaseRef.current === next) return;
+    phaseRef.current = next;
+    setPhase(next);
+  }, []);
 
-  const registerElements = useCallback(() => {
-    if (typeof document === "undefined") return;
+  const restoreSnapshot = useCallback((updateState = true) => {
+    for (const root of rootsRef.current) {
+      if (root.visibility) {
+        root.source.style.setProperty(
+          "visibility",
+          root.visibility,
+          root.visibilityPriority,
+        );
+      } else {
+        root.source.style.removeProperty("visibility");
+      }
+      root.mirror.remove();
+    }
 
-    const previousNodes = new Map(nodesRef.current.map((node) => [node.el, node]));
-    const candidates = Array.from(
-      document.querySelectorAll(CONSTRUCTION_SELECTOR),
-    ) as HTMLElement[];
-    const candidateSet = new Set(candidates);
+    for (const task of tasksRef.current) {
+      task.ghost?.remove();
+      task.selection?.remove();
+      task.caret?.remove();
+      task.ghost = null;
+      task.ghostFragments = null;
+      task.selection = null;
+      task.caret = null;
+    }
+    rootsRef.current = [];
+    if (updateState) setHasSnapshot(false);
+  }, []);
 
-    const filtered = candidates.filter((el) => {
+  const buildSnapshot = useCallback(
+    (previousTasks: ConstructionTask[], restart: boolean) => {
+      const layer = layerRef.current;
+      if (!layer) return;
+
+      const previousBySource = new Map(
+        previousTasks.map((task) => [task.source, task]),
+      );
+      restoreSnapshot(false);
+      const allRoots = Array.from(
+        document.querySelectorAll<HTMLElement>(ROOT_SELECTOR),
+      );
+      const roots = allRoots.filter(
+        (root) => !root.parentElement?.closest(ROOT_SELECTOR),
+      );
+      const elementMap = new Map<HTMLElement, HTMLElement>();
+      let rootOrder = 0;
+
+      for (const source of roots) {
+        if (source.closest("#construction-hud, #agent-activity-log")) continue;
+        const mirror = source.cloneNode(true) as HTMLElement;
+        const sourceElements = [
+          source,
+          ...Array.from(source.querySelectorAll<HTMLElement>("*")),
+        ];
+        const mirrorElements = [
+          mirror,
+          ...Array.from(mirror.querySelectorAll<HTMLElement>("*")),
+        ];
+        const rect = source.getBoundingClientRect();
+        const sourceStyle = window.getComputedStyle(source);
+
+        mirror.setAttribute("aria-hidden", "true");
+        mirror.setAttribute("inert", "");
+        mirror.style.setProperty("position", "fixed", "important");
+        mirror.style.setProperty("top", `${rect.top}px`, "important");
+        mirror.style.setProperty("left", `${rect.left}px`, "important");
+        mirror.style.setProperty("right", "auto", "important");
+        mirror.style.setProperty("bottom", "auto", "important");
+        mirror.style.setProperty("width", `${rect.width}px`, "important");
+        mirror.style.setProperty("height", `${rect.height}px`, "important");
+        mirror.style.setProperty("margin", "0", "important");
+        mirror.style.setProperty(
+          "z-index",
+          sourceStyle.zIndex === "auto"
+            ? String(rootOrder++)
+            : sourceStyle.zIndex,
+          "important",
+        );
+
+        for (let index = 0; index < sourceElements.length; index += 1) {
+          const original = sourceElements[index];
+          const clone = mirrorElements[index];
+          if (!(original instanceof HTMLElement) || !(clone instanceof HTMLElement)) {
+            continue;
+          }
+
+          elementMap.set(original, clone);
+          completeRevealMotion(original, clone);
+          for (const attribute of MIRROR_EXCLUDED_ATTRIBUTES) {
+            clone.removeAttribute(attribute);
+          }
+          clone.removeAttribute("data-construction-ignore");
+          clone.setAttribute("aria-hidden", "true");
+          clone.setAttribute("inert", "");
+          if (clone !== mirror) {
+            clone.style.setProperty("visibility", "hidden", "important");
+          }
+        }
+
+        if (source.tagName.toLowerCase() === "header") {
+          const brand = source.querySelector<HTMLElement>('a[href="/"]');
+          const brandMirror = brand ? elementMap.get(brand) : undefined;
+          if (brandMirror) setSubtreeVisibility(brandMirror, true);
+        }
+
+        layer.appendChild(mirror);
+        rootsRef.current.push({
+          source,
+          mirror,
+          visibility: source.style.getPropertyValue("visibility"),
+          visibilityPriority: source.style.getPropertyPriority("visibility"),
+        });
+        source.style.setProperty("visibility", "hidden", "important");
+      }
+
+      const drafts = getTaskDrafts();
+      const groupIndexes = new Map<HTMLElement, number>();
+      const masterIndexes = new Map<string, number>();
+      const duplicateMasterIndexes: Array<number | undefined> = [];
+      drafts.forEach((draft, index) => {
+        if (!draft.duplicateGroup) {
+          duplicateMasterIndexes[index] = undefined;
+          return;
+        }
+        let groupIndex = groupIndexes.get(draft.duplicateGroup);
+        if (groupIndex === undefined) {
+          groupIndex = groupIndexes.size;
+          groupIndexes.set(draft.duplicateGroup, groupIndex);
+        }
+        const signature = `${groupIndex}:${getStructureSignature(draft.source)}`;
+        const masterIndex = masterIndexes.get(signature);
+        if (masterIndex === undefined) {
+          masterIndexes.set(signature, index);
+          duplicateMasterIndexes[index] = undefined;
+        } else {
+          duplicateMasterIndexes[index] = masterIndex;
+        }
+      });
+      const taskIds = drafts.map(
+        (draft, index) =>
+          `${pathname.replace(/[^a-z0-9]+/gi, "-")}-${index}-${draft.source.tagName.toLowerCase()}`,
+      );
+      const nextTasks: ConstructionTask[] = drafts.map((draft, index) => {
+        const mirror = elementMap.get(draft.source);
+        if (!mirror) {
+          throw new Error(
+            `Construction snapshot is missing a mirror for ${draft.source.tagName.toLowerCase()}.`,
+          );
+        }
+
+        const masterIndex = duplicateMasterIndexes[index];
+        const duplicateOf =
+          masterIndex === undefined ? undefined : drafts[masterIndex].source;
+        const previous = restart ? undefined : previousBySource.get(draft.source);
+        const kind =
+          duplicateOf ? "duplicate" : getTaskKind(draft.source);
+        const task: ConstructionTask = {
+          id: taskIds[index],
+          source: draft.source,
+          mirror,
+          label: getTaskLabel(draft.source),
+          kind,
+          duplicateOf:
+            masterIndex === undefined ? undefined : taskIds[masterIndex],
+          state:
+            previous?.state === "done"
+              ? "done"
+              : previous?.elapsedMs
+                ? "queued"
+                : "idle",
+          elapsedMs: previous?.elapsedMs ?? 0,
+          durationMs: previous?.durationMs ?? 0,
+          workerIds: [],
+          lastTickAt: null,
+          fragments: getTextFragments(mirror),
+          ghostFragments: null,
+          rect: rectFromElement(draft.source),
+          ghost: null,
+          selection: null,
+          caret: null,
+          travelStartedAt: null,
+          travelOrigin: getBrandAnchor(),
+          travelTarget: getBrandAnchor(),
+        };
+        mirror.setAttribute("data-build-id", task.id);
+        mirror.setAttribute("data-build-kind", kind);
+        mirror.setAttribute("data-build-state", task.state);
+        mirror.setAttribute(
+          "data-build-progress",
+          task.state === "done"
+            ? "1"
+            : task.durationMs > 0
+              ? getTaskProgress(
+                  task.elapsedMs - CURSOR_TRAVEL_MS,
+                  task.durationMs,
+                ).toFixed(3)
+              : "0",
+        );
+        if (task.state === "done") {
+          setSubtreeVisibility(mirror, true);
+          mirror.style.removeProperty("clip-path");
+          setTextProgress(task.fragments, 1);
+        }
+
+        return task;
+      });
+
+      const tasksById = new Map(nextTasks.map((task) => [task.id, task]));
+      for (const task of nextTasks) {
+        if (task.duplicateOf) task.master = tasksById.get(task.duplicateOf);
+      }
+      tasksRef.current = nextTasks;
+      setHasSnapshot(rootsRef.current.length > 0);
+      setPageProgress(
+        getConstructionProgress(
+          nextTasks.filter((task) => task.state === "done").length,
+          nextTasks.length,
+        ),
+      );
+    },
+    [pathname, restoreSnapshot],
+  );
+
+  const finishConstruction = useCallback(
+    (skipped: boolean) => {
+      if (isCompleteRef.current) return;
+      isCompleteRef.current = true;
+      if (replayTimerRef.current !== null) {
+        window.clearTimeout(replayTimerRef.current);
+        replayTimerRef.current = null;
+      }
+      tasksRef.current.forEach((task) => {
+        task.state = "done";
+        task.workerIds = [];
+        task.lastTickAt = null;
+        task.ghost?.remove();
+        task.ghost = null;
+      });
+      restoreSnapshot();
+      setPageProgress(100);
+      setPipelineStats({
+        working: 0,
+        queued: 0,
+        done: tasksRef.current.length,
+      });
+      setActiveCursors([]);
+      setIsComplete(true);
+      setIsSkipped(skipped);
+      setIsRoaming(!skipped);
+      transitionPhase(skipped ? "VIEWPORT_IDLE" : "FLOCK");
+    },
+    [restoreSnapshot, transitionPhase],
+  );
+
+  const addActivity = useCallback((text: string, color = ACTIVE_COLOR) => {
+    activityRef.current = [
+      { id: activityIdRef.current++, text, color },
+      ...activityRef.current,
+    ].slice(0, 5);
+    setActivityLog(activityRef.current);
+  }, []);
+
+  const startDuplicateGhost = useCallback((task: ConstructionTask) => {
+    if (!task.master || !layerRef.current) return;
+    const masterRect = task.master.mirror.getBoundingClientRect();
+    const ghost = task.master.mirror.cloneNode(true) as HTMLElement;
+
+    ghost.removeAttribute("data-build-id");
+    ghost.removeAttribute("data-build-state");
+    ghost.removeAttribute("data-build-kind");
+    ghost.setAttribute("data-build-ghost", "true");
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.setAttribute("inert", "");
+    ghost.style.setProperty("position", "fixed", "important");
+    ghost.style.setProperty("top", `${masterRect.top}px`, "important");
+    ghost.style.setProperty("left", `${masterRect.left}px`, "important");
+    ghost.style.setProperty("right", "auto", "important");
+    ghost.style.setProperty("bottom", "auto", "important");
+    ghost.style.setProperty("width", `${masterRect.width}px`, "important");
+    ghost.style.setProperty("height", `${masterRect.height}px`, "important");
+    ghost.style.setProperty("margin", "0", "important");
+    ghost.style.setProperty("z-index", "100", "important");
+    ghost.style.setProperty("opacity", "0.94", "important");
+    ghost.style.setProperty("pointer-events", "none", "important");
+    ghost.style.setProperty("transform-origin", "top left", "important");
+    layerRef.current.appendChild(ghost);
+    task.ghost = ghost;
+    task.ghostFragments = getTextFragments(ghost);
+  }, []);
+
+  const setTaskVisible = useCallback((task: ConstructionTask, progress: number) => {
+    if (task.kind === "duplicate") {
+      if (task.ghost && task.master) {
+        const from = task.master.mirror.getBoundingClientRect();
+        const to = task.mirror.getBoundingClientRect();
+        const scaleX = from.width > 0 ? to.width / from.width : 1;
+        const scaleY = from.height > 0 ? to.height / from.height : 1;
+        const placementProgress = clamp(progress / DUPLICATE_EDIT_PROGRESS, 0, 1);
+        task.ghost.style.setProperty(
+          "transform",
+          `translate3d(${(to.left - from.left) * placementProgress}px, ${(to.top - from.top) * placementProgress}px, 0) scale(${1 + (scaleX - 1) * placementProgress}, ${1 + (scaleY - 1) * placementProgress})`,
+          "important",
+        );
+        if (progress >= DUPLICATE_EDIT_PROGRESS) {
+          setDuplicateText(
+            task,
+            (progress - DUPLICATE_EDIT_PROGRESS) / (1 - DUPLICATE_EDIT_PROGRESS),
+          );
+        }
+      }
+      return;
+    }
+
+    if (task.kind === "text") {
+      setSubtreeVisibility(task.mirror, true);
+      task.mirror.style.removeProperty("clip-path");
+      setTextProgress(task.fragments, progress);
+      updateCaret(task, progress);
+    } else if (task.kind === "component" || task.kind === "media") {
+      if (progress < COMPONENT_DRAG_PROGRESS) {
+        setSubtreeVisibility(task.mirror, false);
+        updateSelection(task, progress / COMPONENT_DRAG_PROGRESS);
+        return;
+      }
+      task.selection?.remove();
+      task.selection = null;
+      setSubtreeVisibility(task.mirror, true);
+      const revealProgress =
+        (progress - COMPONENT_DRAG_PROGRESS) / (1 - COMPONENT_DRAG_PROGRESS);
+      task.mirror.style.setProperty(
+        "clip-path",
+        `inset(0 ${(1 - revealProgress) * 100}% 0 0)`,
+        "important",
+      );
+    } else {
+      setSubtreeVisibility(task.mirror, true);
+      task.mirror.style.setProperty(
+        "clip-path",
+        `inset(0 ${(1 - progress) * 100}% 0 0)`,
+        "important",
+      );
+    }
+  }, []);
+
+  const updateConstruction = useCallback(
+    (now = performance.now()): boolean => {
       if (
-        el.closest("#construction-hud") ||
-        el.closest("#agent-activity-log") ||
-        el.closest("#riad-signature-card") ||
-        el.closest("[data-construction-ignore]") ||
-        el.closest(".splash-screen") ||
-        el.closest("nav") ||
-        el.tagName.toLowerCase() === "svg" ||
-        el.tagName.toLowerCase() === "path" ||
-        el.hasAttribute("data-construction-target")
+        typeof window === "undefined" ||
+        isCompleteRef.current ||
+        reducedMotionRef.current ||
+        document.querySelector(".splash-screen:not(.splash-screen--hide)")
       ) {
         return false;
       }
 
-      // Prefer the containing card/panel as one locked block. Its nested
-      // heading, paragraph, icon and image are revealed as part of that block.
-      let ancestor = el.parentElement;
-      while (ancestor && !["MAIN", "FOOTER"].includes(ancestor.tagName)) {
-        if (
-          candidateSet.has(ancestor) &&
-          isCardCandidate(ancestor as HTMLElement)
-        ) {
-          return false;
-        }
-        ancestor = ancestor.parentElement;
+      for (const root of rootsRef.current) {
+        const rect = root.source.getBoundingClientRect();
+        root.mirror.style.setProperty("top", `${rect.top}px`, "important");
+        root.mirror.style.setProperty("left", `${rect.left}px`, "important");
+        root.mirror.style.setProperty("width", `${rect.width}px`, "important");
+        root.mirror.style.setProperty("height", `${rect.height}px`, "important");
       }
 
-      const rect = el.getBoundingClientRect();
-      return rect.width > 24 && rect.height > 12;
-    });
-
-    const managed: ManagedNode[] = filtered.map((el, index) => {
-      const rect = el.getBoundingClientRect();
-      const tag = el.tagName.toLowerCase();
-      const style = window.getComputedStyle(el);
-      const className = typeof el.className === "string" ? el.className : "";
-
-      const isHexagon =
-        style.clipPath.includes("polygon") ||
-        (el.getAttribute("style") || "").includes("polygon") ||
-        className.includes("hex");
-
-      const borderRadiusValue = parseFloat(style.borderRadius || "0");
-      const borderRadius = Number.isNaN(borderRadiusValue) ? 0 : borderRadiusValue;
-
-      let type: NodeType = "card";
-      if (tag === "h1" || tag === "h2" || tag === "h3") type = "heading";
-      else if (tag === "p" || tag === "span") type = "text";
-      else if (tag === "button" || tag === "a") type = "button";
-      else if (tag === "input" || tag === "textarea") type = "input";
-      else if (tag === "img") type = "image";
-
-      const explicitGroup = el.closest("[data-construction-target], section") as HTMLElement | null;
-      const main = el.closest("main") as HTMLElement | null;
-      const footer = el.closest("footer") as HTMLElement | null;
-      let regionRoot = explicitGroup || main || footer || el.parentElement;
-      if (!explicitGroup && main) {
-        let branch = el;
-        while (branch.parentElement && branch.parentElement !== main) {
-          branch = branch.parentElement;
-        }
-        regionRoot = branch;
-      }
-
-      const regionTitle =
-        explicitGroup?.getAttribute("data-construction-target") ||
-        explicitGroup?.id ||
-        regionRoot?.querySelector("h1, h2, h3")?.textContent?.trim() ||
-        (footer ? "Footer" : "Page section");
-
-      if (regionRoot && !regionRoot.hasAttribute("data-agent-region-id")) {
-        regionRoot.setAttribute("data-agent-region-id", "region-" + index + "-" + tag);
-      }
-      const sectionId = regionRoot?.getAttribute("data-agent-region-id") || "region-" + index;
-
-      let id = el.getAttribute("data-construct-id");
-      if (!id) {
-        id = pathname.replace(/[^a-z0-9]+/gi, "-") + "-" + index + "-" + tag;
-        el.setAttribute("data-construct-id", id);
-      }
-
-      const previous = previousNodes.get(el);
-      const initialStage: WorkflowState = isReducedMotionRef.current
-        ? "done"
-        : "idle";
-      const stage = previous?.stage ?? initialStage;
-      const progress = previous?.progress ?? (initialStage === "done" ? 1 : 0);
-      const elapsedMs = previous?.elapsedMs ?? 0;
-      const crewIndex = previous?.crewIndex ?? null;
-
-      el.setAttribute("data-construct-node", "true");
-      el.setAttribute("data-construct-type", type);
-      const displayState =
-        stage === "done"
-          ? "constructed"
-          : stage === "idle"
-            ? "unconstructed"
-            : stage;
-      el.setAttribute("data-construct-state", displayState);
-      el.style.setProperty("--construct-p", String(progress));
-      el.style.setProperty("--construct-stage-p", "0");
-
-      return {
-        id,
-        el,
-        type,
-        sectionId,
-        sectionLabel: regionTitle || "Page section",
-        label: getElementLabel(el, type),
-        borderRadius,
-        isHexagon,
-        stage,
-        elapsedMs,
-        progress,
-        crewIndex,
-        lastTickAt: null,
-      };
-    });
-
-    managed.sort(
-      (a, b) =>
-        a.el.getBoundingClientRect().top - b.el.getBoundingClientRect().top,
-    );
-    nodesRef.current = managed;
-  }, [pathname]);
-
-  const updateConstruction = useCallback((now = performance.now()): boolean => {
-    if (typeof window === "undefined") return false;
-
-    const scrollingElement = document.scrollingElement ?? document.documentElement;
-    const scrollTop = Math.max(scrollingElement.scrollTop, window.scrollY);
-    const metrics = getDocumentScrollMetrics(
-      scrollTop,
-      scrollingElement.scrollHeight,
-      scrollingElement.clientHeight || window.innerHeight,
-      2,
-    );
-    setPageProgress((current) => current === metrics.progress ? current : metrics.progress);
-
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const splashActive = Boolean(
-      document.querySelector(".splash-screen:not(.splash-screen--hide)"),
-    );
-
-    // The drone animation has priority over normal construction until it
-    // disperses. On scroll resume, the cursors leave the letters smoothly.
-    if (swarmPhaseRef.current !== "idle") {
-      const phase = swarmPhaseRef.current;
-      const originWidth = Math.min(360, Math.max(220, viewportWidth - 32));
-      const scale = originWidth / 320;
-      const originHeight = (originWidth * 90) / 320;
-      const originX = Math.max(16, viewportWidth - originWidth - 24);
-      const originY = Math.max(72, viewportHeight - originHeight - 92);
-
-      if (phase === "dispersing" && dispersalStartTimeRef.current !== null) {
-        const dispersalProgress = Math.min(
-          (now - dispersalStartTimeRef.current) / 620,
-          1,
-        );
-        const cursors = AGENT_POOL.map((agent, index) => {
-          const point = getSignatureStrokePoint(index, 1);
-          const origin = swarmDispersalOriginsRef.current[index] ||
-            swarmPositionsRef.current[index] || {
-              x: originX + point.x * scale,
-              y: originY + point.y * scale,
-            };
-          const angle = (index / AGENT_POOL.length) * Math.PI * 2 + 0.25;
-          const distance = 180 * easeInOutCubic(dispersalProgress);
-          return {
-            agent,
-            x: origin.x + Math.cos(angle) * distance,
-            y: origin.y + Math.sin(angle) * distance,
-            actionText: "DISPERSING",
-            isClicking: false,
-            isWorking: false,
-            showLabel: false,
-            cursorSize: 11,
-            opacity: 1 - dispersalProgress,
-          };
-        });
-
-        setActiveCursors(cursors);
-        setSignatureProgress(1 - dispersalProgress);
-        setSignatureOpacity(1 - dispersalProgress);
-        setActiveBorders([]);
-        setSelectionOverlays([]);
-        setConstructionParcels([]);
-        setConstructionPaintGrids([]);
-
-        if (dispersalProgress >= 1) {
-          swarmPhaseRef.current = "idle";
-          swarmStartTimeRef.current = null;
-          dispersalStartTimeRef.current = null;
-          swarmPositionsRef.current = [];
-          swarmDispersalOriginsRef.current = [];
-          setSignatureVisible(false);
-          setSignatureProgress(0);
-          setSignatureOpacity(1);
-          setActiveCursors([]);
-          // Continue into the normal workflow in this same frame.
-        } else {
-          return true;
-        }
-      } else if (phase === "flying" || phase === "tracing" || phase === "holding") {
-        const elapsed = Math.max(0, now - (swarmStartTimeRef.current || now));
-        const flightDuration = 1150;
-        const traceDuration = 2850;
-        let drawProgress = 0;
-        if (elapsed < flightDuration) {
-          swarmPhaseRef.current = "flying";
-        } else if (elapsed < flightDuration + traceDuration) {
-          swarmPhaseRef.current = "tracing";
-          drawProgress = easeInOutCubic(
-            (elapsed - flightDuration) / traceDuration,
-          );
-        } else {
-          swarmPhaseRef.current = "holding";
-          drawProgress = 1;
-        }
-
-        const cursors = AGENT_POOL.map((agent, index) => {
-          const target = getSignatureStrokePoint(index, drawProgress);
-          const targetX = originX + target.x * scale;
-          const targetY = originY + target.y * scale;
-          let x = targetX;
-          let y = targetY;
-
-          if (swarmPhaseRef.current === "flying") {
-            const startX = ((index * 137.7) % Math.max(120, viewportWidth - 40)) + 20;
-            const startY = ((index * 83.9) % Math.max(120, viewportHeight - 110)) + 30;
-            const startPoint = getSignatureStrokePoint(index, 0);
-            const destinationX = originX + startPoint.x * scale;
-            const destinationY = originY + startPoint.y * scale;
-            const flightProgress = easeInOutCubic(elapsed / flightDuration);
-            x = startX + (destinationX - startX) * flightProgress;
-            y = startY + (destinationY - startY) * flightProgress;
-          }
-
-          if (swarmPhaseRef.current === "holding") {
-            x += Math.sin(index * 1.7) * 1.1;
-            y += Math.cos(index * 1.3) * 1.1;
-          }
-
-          swarmPositionsRef.current[index] = { x, y };
-          return {
-            agent,
-            x,
-            y,
-            actionText: "DRAWING RIAD",
-            isClicking: swarmPhaseRef.current === "tracing",
-            isWorking: false,
-            showLabel: false,
-            cursorSize: 11,
-            opacity: 1,
-          };
-        });
-
-        setActiveCursors(cursors);
-        setSignaturePosition({
-          left: originX,
-          top: originY,
-          width: originWidth,
-        });
-        setSignatureProgress(drawProgress);
-        setSignatureOpacity(1);
-        setSignatureVisible(true);
-        setActiveBorders([]);
-        setSelectionOverlays([]);
-        setConstructionParcels([]);
-        setConstructionPaintGrids([]);
-
-        // Once the formation is complete it can remain static. No idle RAF loop.
-        return swarmPhaseRef.current !== "holding";
-      }
-    }
-
-    if (isReducedMotionRef.current || splashActive) {
-      setActiveCursors([]);
-      setActiveBorders([]);
-      setSelectionOverlays([]);
-      setConstructionParcels([]);
-      setConstructionPaintGrids([]);
-      return false;
-    }
-
-    const nodeRects = new Map<ManagedNode, DOMRect>();
-    for (const node of nodesRef.current) {
-      const rect = node.el.getBoundingClientRect();
-      nodeRects.set(node, rect);
-      const visible = isWithinConstructionViewport(rect, viewportHeight);
-
-      if (visible && node.stage === "idle") {
-        node.stage = "queued";
-        node.el.setAttribute("data-construct-state", "queued");
-        node.el.setAttribute("data-construct-stage", "queued");
-      }
-
-      if (!visible && isActiveStage(node.stage)) {
-        // Work pauses outside the viewport, then resumes from the same stage
-        // and elapsed time when the visitor returns to this section.
-        node.lastTickAt = null;
-      }
-    }
-
-    let activeVisibleCount = nodesRef.current.filter((node) => {
-      const rect = nodeRects.get(node);
-      return rect && isWithinConstructionViewport(rect, viewportHeight) && isActiveStage(node.stage);
-    }).length;
-
-    const visibleQueue = nodesRef.current
-      .filter((node) => {
-        const rect = nodeRects.get(node);
-        return rect && node.stage === "queued" && isWithinConstructionViewport(rect, viewportHeight);
-      })
-      .sort((a, b) => {
-        const aRect = nodeRects.get(a);
-        const bRect = nodeRects.get(b);
-        return (aRect?.top || 0) - (bRect?.top || 0);
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const viewportArea = viewportWidth * viewportHeight;
+      const scrollAge = now - scrollVelocityAtRef.current;
+      const viewportVelocity =
+        scrollAge < 600
+          ? scrollVelocityRef.current * (1 - scrollAge / 600)
+          : 0;
+      const visibleTasks = tasksRef.current.filter((task) => {
+        task.rect = rectFromElement(task.source);
+        return isWithinViewport(task.rect, viewportWidth, viewportHeight);
       });
 
-    for (const node of visibleQueue) {
-      if (activeVisibleCount >= MAX_ACTIVE_CREWS) break;
-      node.stage = "mark";
-      node.elapsedMs = 0;
-      node.lastTickAt = now;
-      node.crewIndex = nextCrewIndexRef.current % CREW_COUNT;
-      nextCrewIndexRef.current += 1;
-      activeVisibleCount += 1;
-      node.el.setAttribute("data-construct-state", "mark");
-      node.el.setAttribute("data-construct-stage", "mark");
-      node.el.setAttribute("data-construct-lock", "locked");
-      node.el.setAttribute("data-construct-owner", "Crew " + (node.crewIndex + 1));
-      node.el.style.setProperty("--active-agent-color", STAGE_COLORS.mark);
-      activityLogRef.current = [
-        {
-          id: logSequenceRef.current++,
-          text: "MARK locked " + node.label,
-          color: STAGE_COLORS.mark,
-        },
-        ...activityLogRef.current,
-      ].slice(0, 4);
-      setActivityLog(activityLogRef.current);
-    }
-
-    const activeCursorsNext: ActiveCursorState[] = [];
-    const activeBordersNext: ActiveBorderTracing[] = [];
-    const selectionOverlaysNext: SelectionOverlay[] = [];
-    const parcelsNext: ConstructionParcel[] = [];
-    const paintGridsNext: ConstructionPaintGrid[] = [];
-    const logEntries: ActivityEntry[] = [];
-
-    for (const node of nodesRef.current) {
-      if (!isActiveStage(node.stage)) continue;
-
-      const rect = nodeRects.get(node);
-      if (!rect || !isWithinConstructionViewport(rect, viewportHeight)) continue;
-      if (node.lastTickAt === null) node.lastTickAt = now;
-
-      const delta = clamp(now - node.lastTickAt, 0, 80);
-      node.elapsedMs += delta;
-      node.lastTickAt = now;
-
-      const snapshot = getWorkflowSnapshot(node.elapsedMs);
-      if (snapshot.complete) {
-        node.stage = "done";
-        node.progress = 1;
-        node.lastTickAt = null;
-        node.el.setAttribute("data-construct-state", "constructed");
-        node.el.setAttribute("data-construct-stage", "done");
-        node.el.style.setProperty("--construct-p", "1");
-        node.el.style.setProperty("--construct-stage-p", "1");
-        node.el.removeAttribute("data-construct-lock");
-        node.el.removeAttribute("data-construct-owner");
-        logEntries.push({
-          id: logSequenceRef.current++,
-          text: "QA approved " + node.label,
-          color: STAGE_COLORS.qa,
-        });
-        continue;
+      for (const task of tasksRef.current) {
+        if (task.state === "working" && !visibleTasks.includes(task)) {
+          // Mutable task records are kept in a ref to avoid React renders per animation frame.
+          // eslint-disable-next-line react-hooks/immutability
+          task.state = "queued";
+          task.workerIds = [];
+          task.lastTickAt = null;
+          task.ghost?.remove();
+          task.selection?.remove();
+          task.caret?.remove();
+          task.ghost = null;
+          task.ghostFragments = null;
+          task.selection = null;
+          task.caret = null;
+          task.travelStartedAt = null;
+          task.mirror.setAttribute("data-build-state", "queued");
+          task.mirror.removeAttribute("data-build-worker-ids");
+          task.mirror.style.removeProperty("clip-path");
+          setSubtreeVisibility(task.mirror, false);
+        }
       }
 
-      const previousStage = node.stage;
-      node.stage = snapshot.stage;
-      node.progress = snapshot.overallProgress;
-      node.el.setAttribute("data-construct-state", snapshot.stage);
-      node.el.setAttribute("data-construct-stage", snapshot.stage);
-      node.el.style.setProperty("--construct-p", snapshot.overallProgress.toFixed(3));
-      node.el.style.setProperty("--construct-stage-p", snapshot.stageProgress.toFixed(3));
+      for (const task of visibleTasks) {
+        if (task.state !== "working") continue;
+        if (task.lastTickAt === null) task.lastTickAt = now;
+        task.elapsedMs += clamp(now - task.lastTickAt, 0, 120);
+        task.lastTickAt = now;
+        const progress = getTaskProgress(
+          task.elapsedMs - CURSOR_TRAVEL_MS,
+          task.durationMs,
+        );
+        task.mirror.setAttribute("data-build-state", "working");
+        task.mirror.setAttribute("data-build-progress", progress.toFixed(3));
+        setTaskVisible(task, progress);
 
-      if (previousStage !== snapshot.stage) {
-        const agent = node.crewIndex === null
-          ? undefined
-          : getCrewAgent(AGENT_POOL, node.crewIndex, snapshot.stage);
-        logEntries.push({
-          id: logSequenceRef.current++,
-          text: stageLabel(snapshot.stage) + " " + (agent?.name || "Agent") + " · " + node.label,
-          color: STAGE_COLORS[snapshot.stage],
-        });
+        if (progress >= 1) {
+          task.state = "done";
+          task.workerIds = [];
+          task.lastTickAt = null;
+          task.ghost?.remove();
+          task.selection?.remove();
+          task.caret?.remove();
+          task.ghost = null;
+          task.ghostFragments = null;
+          task.selection = null;
+          task.caret = null;
+          task.travelStartedAt = null;
+          task.mirror.setAttribute("data-build-state", "done");
+          task.mirror.setAttribute("data-build-progress", "1");
+          task.mirror.removeAttribute("data-build-worker-ids");
+          task.mirror.style.removeProperty("clip-path");
+          setSubtreeVisibility(task.mirror, true);
+          setTextProgress(task.fragments, 1);
+          addActivity(
+            `${task.kind === "duplicate" ? "[COPY]" : "[DONE]"} ${task.label}`,
+            "#34d399",
+          );
+        }
       }
 
-      if (node.crewIndex === null) continue;
-      const agent = getCrewAgent(AGENT_POOL, node.crewIndex, snapshot.stage);
-      if (!agent) continue;
+      const completedTaskIds = new Set(
+        tasksRef.current
+          .filter((task) => task.state === "done")
+          .map((task) => task.id),
+      );
+      const availableTasks = visibleTasks.filter(
+        (task) => task.state !== "working",
+      );
+      const readyIds = new Set(
+        getEligibleTasks(
+          availableTasks.map((task) => ({
+            ...task,
+            dependencies: task.duplicateOf ? [task.duplicateOf] : [],
+          })),
+          viewportWidth,
+          viewportHeight,
+          completedTaskIds,
+        ).map((task) => task.id),
+      );
+      const readyTasks = availableTasks.filter((task) => readyIds.has(task.id));
+      const orderedTasks = spreadTasksAcrossViewport(
+        readyTasks,
+        viewportWidth,
+        viewportHeight,
+      );
+      const busyAgentIds = getLeasedAgentIds(tasksRef.current);
 
-      const stageProgress = easeInOutCubic(snapshot.stageProgress);
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      let cursorX = centerX;
-      let cursorY = centerY;
-      const borderPoint = getPointOnElementPerimeter(
-        rect.width,
-        rect.height,
-        node.borderRadius,
-        node.isHexagon,
-        stageProgress,
+      for (const task of orderedTasks) {
+        const availableCount = MAX_ACTIVE_AGENTS - busyAgentIds.size;
+        if (availableCount < 1) break;
+
+        const demand = getTaskWorkerDemand(
+          task.kind,
+          task.rect.width * task.rect.height,
+          task.fragments.reduce(
+            (total, fragment) => total + fragment.text.length,
+            0,
+          ),
+          viewportArea,
+          viewportVelocity,
+        );
+        const workers = selectAvailableAgents(
+          AGENT_POOL,
+          busyAgentIds,
+          Math.min(demand, availableCount),
+          nextAgentRef.current,
+        );
+        if (workers.length === 0) break;
+
+        task.state = "working";
+        task.workerIds = workers.map((worker) => worker.id);
+        task.lastTickAt = now;
+        task.travelStartedAt = now;
+        task.travelOrigin = getBrandAnchor();
+        task.travelTarget = getTaskStart(task);
+        task.durationMs =
+          task.durationMs ||
+          getTaskDuration(
+            task.kind,
+            task.rect.width * task.rect.height,
+            viewportArea,
+            workers.length,
+          );
+        workers.forEach((worker) => busyAgentIds.add(worker.id));
+        nextAgentRef.current =
+          (AGENT_POOL.findIndex(
+            (agent) => agent.id === workers[workers.length - 1]?.id,
+          ) +
+            1) %
+          AGENT_POOL.length;
+
+        task.mirror.setAttribute("data-build-state", "working");
+        task.mirror.setAttribute(
+          "data-build-worker-ids",
+          task.workerIds.join(" "),
+        );
+        if (task.kind === "duplicate") {
+          startDuplicateGhost(task);
+          addActivity(`[COPY] ${workers[0].name} placing ${task.label}`, "#a78bfa");
+        } else {
+          setSubtreeVisibility(task.mirror, false);
+          if (task.kind === "component" || task.kind === "media") {
+            task.selection = createSelection(task);
+            layerRef.current?.appendChild(task.selection);
+          } else if (task.kind === "text") {
+            task.caret = document.createElement("div");
+            task.caret.setAttribute("data-build-caret", task.id);
+            task.caret.setAttribute("aria-hidden", "true");
+            task.caret.inert = true;
+            task.caret.style.cssText =
+              "position:fixed;z-index:102;width:1.5px;height:16px;background:#e0f2fe;box-shadow:0 0 6px rgba(56,189,248,.8);pointer-events:none;animation:construction-caret-blink .9s steps(2,start) infinite;";
+            layerRef.current?.appendChild(task.caret);
+            setTextProgress(task.fragments, 0);
+          }
+          addActivity(`[BUILD] ${workers[0].name} working ${task.label}`, ACTIVE_COLOR);
+        }
+      }
+
+      const workingTasks = tasksRef.current.filter(
+        (task) => task.state === "working",
+      );
+      const workingCount = workingTasks.reduce(
+        (total, task) => total + task.workerIds.length,
+        0,
+      );
+      const queuedCount = visibleTasks.filter(
+        (task) => task.state !== "working" && task.state !== "done",
+      ).length;
+      const doneCount = tasksRef.current.filter(
+        (task) => task.state === "done",
+      ).length;
+      const progress = getConstructionProgress(doneCount, tasksRef.current.length);
+
+      setPageProgress((previous) => (previous === progress ? previous : progress));
+      setPipelineStats((previous) =>
+        previous.working === workingCount &&
+        previous.queued === queuedCount &&
+        previous.done === doneCount
+          ? previous
+          : { working: workingCount, queued: queuedCount, done: doneCount },
       );
 
-      if (snapshot.stage === "mark") {
-        cursorX = rect.left + borderPoint.x;
-        cursorY = rect.top + borderPoint.y;
-        selectionOverlaysNext.push({
-          id: node.id,
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-          color: STAGE_COLORS.mark,
-          label: "LOCKED · CREW " + (node.crewIndex + 1),
-          stage: "mark",
-          progress: stageProgress,
-        });
-      } else if (snapshot.stage === "make") {
-        const sourceX = node.crewIndex % 2 === 0 ? -150 : viewportWidth + 150;
-        const sourceY = clamp(
-          centerY + ((node.crewIndex % 3) - 1) * 72,
-          24,
-          viewportHeight - 24,
+      const activeCursorsNext: ActiveCursor[] = [];
+      for (const task of workingTasks) {
+        const progress = getTaskProgress(
+          task.elapsedMs - CURSOR_TRAVEL_MS,
+          task.durationMs,
         );
-        const ghostWidth = clamp(rect.width * 0.72, 112, 330);
-        const ghostHeight = clamp(rect.height * 0.55, 54, 112);
-        const destinationLeft = centerX - ghostWidth / 2;
-        const destinationTop = centerY - ghostHeight / 2;
-        const ghostLeft = sourceX + (destinationLeft - sourceX) * stageProgress;
-        const ghostTop = sourceY + (destinationTop - sourceY) * stageProgress;
+        const rect = task.mirror.getBoundingClientRect();
+        const taskStart = task.travelTarget;
+        task.workerIds.forEach((id, index) => {
+          const agent = AGENT_POOL.find((candidate) => candidate.id === id);
+          if (!agent) return;
+          const lane = (index + 1) / (task.workerIds.length + 1);
+          let x = rect.left + rect.width * progress;
+          let y = rect.top + rect.height * lane;
+          if (task.kind === "text") {
+            const caret = getCaretRect(task.fragments, progress);
+            if (caret) {
+              x = caret.left;
+              y = caret.top + caret.height / 2;
+            }
+          } else if (task.kind === "line") {
+            y = rect.top + rect.height / 2;
+          } else if (task.kind === "duplicate" && task.master) {
+            const masterRect = task.master.mirror.getBoundingClientRect();
+            if (progress < DUPLICATE_EDIT_PROGRESS) {
+              const placementProgress = clamp(
+                progress / DUPLICATE_EDIT_PROGRESS,
+                0,
+                1,
+              );
+              const point = getCurvedTrajectoryPoint(
+                masterRect.left,
+                masterRect.top,
+                rect.left,
+                rect.top,
+                placementProgress,
+                index % 2 === 0 ? 1 : -1,
+              );
+              x = point.x;
+              y = point.y;
+            } else {
+              x =
+                rect.left +
+                rect.width *
+                  ((progress - DUPLICATE_EDIT_PROGRESS) /
+                    (1 - DUPLICATE_EDIT_PROGRESS));
+              y = rect.top + rect.height * lane;
+            }
+          } else if (task.kind === "component" || task.kind === "media") {
+            if (progress < COMPONENT_DRAG_PROGRESS) {
+              const dragProgress = progress / COMPONENT_DRAG_PROGRESS;
+              x = rect.left + rect.width * dragProgress;
+              y = rect.top + rect.height * dragProgress;
+            } else {
+              const revealProgress =
+                (progress - COMPONENT_DRAG_PROGRESS) /
+                (1 - COMPONENT_DRAG_PROGRESS);
+              x = rect.left + rect.width * revealProgress;
+            }
+          }
 
-        cursorX = ghostLeft + ghostWidth * 0.88;
-        cursorY = ghostTop + ghostHeight * 0.28;
-        parcelsNext.push({
-          id: node.id,
-          left: ghostLeft,
-          top: ghostTop,
-          width: ghostWidth,
-          height: ghostHeight,
-          label: node.label,
-          color: agent.color,
-          progress: stageProgress,
-        });
-      } else if (snapshot.stage === "paint") {
-        cursorX = rect.left + borderPoint.x;
-        cursorY = rect.top + borderPoint.y;
-        paintGridsNext.push({
-          id: node.id,
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-          columns: 7,
-          rows: 5,
-          progress: stageProgress,
-          color: agent.color,
-        });
-        activeBordersNext.push({
-          id: node.id,
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-          borderRadius: node.borderRadius,
-          isHexagon: node.isHexagon,
-          progress: stageProgress,
-          color: agent.color,
-          glowColor: agent.glowColor,
-        });
-      } else {
-        const reversePoint = getPointOnElementPerimeter(
-          rect.width,
-          rect.height,
-          node.borderRadius,
-          node.isHexagon,
-          1 - stageProgress,
-        );
-        cursorX = rect.left + reversePoint.x;
-        cursorY = rect.top + reversePoint.y;
-        selectionOverlaysNext.push({
-          id: node.id,
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-          color: STAGE_COLORS.qa,
-          label: "QA REVIEW · CREW " + (node.crewIndex + 1),
-          stage: "qa",
-          progress: stageProgress,
+          const travelProgress =
+            task.travelStartedAt === null
+              ? 1
+              : clamp((now - task.travelStartedAt) / CURSOR_TRAVEL_MS, 0, 1);
+          if (travelProgress < 1) {
+            const easedTravel = 1 - (1 - travelProgress) ** 2;
+            const travelPoint = getCurvedTrajectoryPoint(
+              task.travelOrigin.x,
+              task.travelOrigin.y,
+              taskStart.x,
+              taskStart.y,
+              easedTravel,
+              index % 2 === 0 ? 1 : -1,
+            );
+            x = travelPoint.x;
+            y = travelPoint.y;
+          }
+
+          activeCursorsNext.push({
+            agent,
+            x: clamp(x, 2, Math.max(2, viewportWidth - 18)),
+            y: clamp(y, 2, Math.max(2, viewportHeight - 18)),
+            isPressed:
+              (task.kind === "component" || task.kind === "media") &&
+              progress > 0 &&
+              progress < COMPONENT_DRAG_PROGRESS,
+          });
         });
       }
+      if (now - lastCursorUpdateRef.current > 32 || workingCount === 0) {
+        lastCursorUpdateRef.current = now;
+        setActiveCursors(activeCursorsNext);
+      }
 
-      activeCursorsNext.push({
-        agent,
-        x: clamp(cursorX, 4, viewportWidth - 18),
-        y: clamp(cursorY, 4, viewportHeight - 18),
-        actionText: getStageAction(snapshot.stage),
-        isClicking: snapshot.stage === "mark" || snapshot.stage === "qa",
-        isWorking: true,
-        showLabel: true,
-        roleLabel: stageLabel(snapshot.stage),
-        cursorSize: 14,
-      });
-    }
+      const allTasksFinished =
+        tasksRef.current.length > 0 && doneCount === tasksRef.current.length;
+      if (allTasksFinished) {
+        finishConstruction(false);
+        return false;
+      }
 
-    if (logEntries.length > 0) {
-      activityLogRef.current = [...logEntries.reverse(), ...activityLogRef.current].slice(0, 4);
-      setActivityLog(activityLogRef.current);
-    }
+      const viewportComplete =
+        visibleTasks.every((task) => task.state === "done") &&
+        visibleTasks.length > 0;
+      setIsRoaming(viewportComplete);
+      if (viewportComplete) {
+        transitionPhase("VIEWPORT_IDLE");
+      } else if (workingCount === 0 && visibleTasks.length === 0) {
+        transitionPhase("VIEWPORT_IDLE");
+      } else if (workingCount > 0) {
+        transitionPhase(
+          workingTasks.some(
+            (task) =>
+              task.travelStartedAt !== null &&
+              now - task.travelStartedAt < CURSOR_TRAVEL_MS,
+          )
+            ? "FAN_OUT"
+            : "VIEWPORT_BUILD",
+        );
+      }
+      return workingCount > 0;
+    },
+    [
+      addActivity,
+      finishConstruction,
+      setTaskVisible,
+      startDuplicateGhost,
+      transitionPhase,
+    ],
+  );
 
-    const queuedCount = nodesRef.current.filter((node) => node.stage === "queued").length;
-    const doneCount = nodesRef.current.filter((node) => node.stage === "done").length;
-    const stats = {
-      working: activeCursorsNext.length,
-      queued: queuedCount,
-      done: doneCount,
-    };
-    setPipelineStats((previous) =>
-      previous.working === stats.working &&
-      previous.queued === stats.queued &&
-      previous.done === stats.done
-        ? previous
-        : stats,
+  const scheduleAnimation = useCallback(() => {
+    if (rafRef.current !== null || isCompleteRef.current) return;
+    rafRef.current = window.requestAnimationFrame((time) => {
+      rafRef.current = null;
+      if (updateConstruction(time)) scheduleRef.current();
+    });
+  }, [updateConstruction]);
+  useEffect(() => {
+    scheduleRef.current = scheduleAnimation;
+  }, [scheduleAnimation]);
+
+  const skipConstruction = useCallback(() => {
+    finishConstruction(true);
+  }, [finishConstruction]);
+
+  const replayConstruction = useCallback(() => {
+    if (reducedMotionRef.current) return;
+    isCompleteRef.current = false;
+    setIsComplete(false);
+    setIsSkipped(false);
+    setIsRoaming(false);
+    transitionPhase("INTRO_GATHER");
+    setActiveCursors([]);
+    setPipelineStats({ working: 0, queued: 0, done: 0 });
+    nextAgentRef.current = 0;
+    buildSnapshot([], true);
+    const anchor = getBrandAnchor();
+    setActiveCursors(
+      AGENT_POOL.slice(0, 8).map((agent, index) => {
+        const angle = (index / 8) * Math.PI * 2;
+        return {
+          agent,
+          x: anchor.x + Math.cos(angle) * 18,
+          y: anchor.y + Math.sin(angle) * 18,
+        };
+      }),
     );
-
-    setActiveCursors(activeCursorsNext);
-    setActiveBorders(activeBordersNext);
-    setSelectionOverlays(selectionOverlaysNext);
-    setConstructionParcels(parcelsNext);
-    setConstructionPaintGrids(paintGridsNext);
-
-    const hasVisibleQueued = visibleQueue.some((node) => node.stage === "queued");
-    const hasVisibleActive = activeCursorsNext.length > 0;
-    const hasVisibleWork = hasVisibleQueued || hasVisibleActive;
-    hasVisibleWorkRef.current = hasVisibleWork;
-
-    if (
-      hasVisibleWork ||
-      isScrollingRef.current ||
-      signatureHasPlayedRef.current ||
-      swarmPhaseRef.current !== "idle"
-    ) {
-      if (signatureTimeoutRef.current !== null) {
-        clearTimeout(signatureTimeoutRef.current);
-        signatureTimeoutRef.current = null;
+    replayTimerRef.current = window.setTimeout(() => {
+      replayTimerRef.current = null;
+      if (isCompleteRef.current || reducedMotionRef.current) {
+        setActiveCursors([]);
+        return;
       }
-    } else if (signatureTimeoutRef.current === null) {
-      signatureTimeoutRef.current = window.setTimeout(() => {
-        signatureTimeoutRef.current = null;
-        if (
-          isScrollingRef.current ||
-          hasVisibleWorkRef.current ||
-          signatureHasPlayedRef.current ||
-          swarmPhaseRef.current !== "idle" ||
-          isReducedMotionRef.current
-        ) {
-          return;
-        }
-
-        signatureHasPlayedRef.current = true;
-        swarmPhaseRef.current = "flying";
-        swarmStartTimeRef.current = performance.now();
-        setSignatureVisible(true);
-        setSignatureProgress(0);
-        setSignatureOpacity(1);
-        scheduleAnimationRef.current();
-      }, 1400);
-    }
-
-    return hasVisibleWork;
-  }, []);
+      setActiveCursors([]);
+      updateConstruction(performance.now());
+      scheduleRef.current();
+    }, 560);
+  }, [buildSnapshot, transitionPhase, updateConstruction]);
 
   useEffect(() => {
-    setIsMounted(true);
-
-    const checkMotion = () => {
-      const matches = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      setReducedMotion(matches);
-      isReducedMotionRef.current = matches;
-      if (matches) {
-        nodesRef.current.forEach((node) => {
-          node.stage = "done";
-          node.progress = 1;
-          node.el.setAttribute("data-construct-state", "constructed");
-          node.el.style.setProperty("--construct-p", "1");
-        });
-      }
-    };
-
-    checkMotion();
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onMotionChange = (event: MediaQueryListEvent) => {
-      setReducedMotion(event.matches);
-      isReducedMotionRef.current = event.matches;
-      if (event.matches) {
-        nodesRef.current.forEach((node) => {
-          node.stage = "done";
-          node.progress = 1;
-          node.el.setAttribute("data-construct-state", "constructed");
-          node.el.style.setProperty("--construct-p", "1");
-          node.el.removeAttribute("data-construct-lock");
-          node.el.removeAttribute("data-construct-owner");
-        });
-        setActiveCursors([]);
-        setActiveBorders([]);
-        setSelectionOverlays([]);
-        setConstructionParcels([]);
-        setConstructionPaintGrids([]);
-        setSignatureVisible(false);
-      } else {
-        nodesRef.current.forEach((node) => {
-          if (node.stage === "done") {
-            node.stage = "idle";
-            node.progress = 0;
-            node.el.setAttribute("data-construct-state", "unconstructed");
-            node.el.style.setProperty("--construct-p", "0");
-          }
-        });
-      }
-    };
-    mediaQuery.addEventListener("change", onMotionChange);
-
-    swarmPhaseRef.current = "idle";
-    swarmStartTimeRef.current = null;
-    dispersalStartTimeRef.current = null;
-    swarmPositionsRef.current = [];
-    swarmDispersalOriginsRef.current = [];
-    signatureHasPlayedRef.current = false;
-    setSignatureVisible(false);
-    setSignatureProgress(0);
-    setSignatureOpacity(1);
-
     let disposed = false;
-    let registrationFrame: number | null = null;
+    let startTimer: number | null = null;
+    let introTimer: number | null = null;
+    let refreshFrame: number | null = null;
     let mutationObserver: MutationObserver | null = null;
-    let bodyResizeObserver: ResizeObserver | null = null;
     let splashObserver: MutationObserver | null = null;
+    let stableTimer: number | null = null;
+    let started = false;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    const scheduleRegistration = () => {
-      if (registrationFrame !== null || disposed) return;
-      registrationFrame = window.requestAnimationFrame(() => {
-        registrationFrame = null;
-        if (disposed) return;
-        registerElements();
-        updateConstruction(performance.now());
-        scheduleAnimation();
-      });
-    };
-
-    const animate = (time: number) => {
-      rafRef.current = null;
-      if (disposed) return;
-      const shouldContinue = updateConstruction(time);
-      if (shouldContinue || swarmPhaseRef.current === "flying" ||
-          swarmPhaseRef.current === "tracing" ||
-          swarmPhaseRef.current === "dispersing") {
-        rafRef.current = window.requestAnimationFrame(animate);
-      }
-    };
-
-    const scheduleAnimation = () => {
-      if (disposed || rafRef.current !== null) return;
-      rafRef.current = window.requestAnimationFrame(animate);
-    };
-    scheduleAnimationRef.current = scheduleAnimation;
-
-    const onScroll = () => {
-      isScrollingRef.current = true;
-      signatureHasPlayedRef.current = false;
-      if (signatureTimeoutRef.current !== null) {
-        clearTimeout(signatureTimeoutRef.current);
-        signatureTimeoutRef.current = null;
-      }
-
+    const refresh = (restart = false) => {
       if (
-        swarmPhaseRef.current === "flying" ||
-        swarmPhaseRef.current === "tracing" ||
-        swarmPhaseRef.current === "holding"
+        disposed ||
+        (isCompleteRef.current && !restart) ||
+        document.querySelector(".splash-screen:not(.splash-screen--hide)")
       ) {
-        swarmPhaseRef.current = "dispersing";
-        dispersalStartTimeRef.current = performance.now();
-        swarmDispersalOriginsRef.current = swarmPositionsRef.current.map((point) => ({
-          x: point.x,
-          y: point.y,
-        }));
+        return;
       }
-
-      if (scrollSettleTimeoutRef.current !== null) {
-        clearTimeout(scrollSettleTimeoutRef.current);
-      }
-      scrollSettleTimeoutRef.current = window.setTimeout(() => {
-        isScrollingRef.current = false;
-        updateConstruction(performance.now());
-        scheduleAnimation();
-      }, 700);
-
-      // Coalesce high-frequency scroll events into the shared animation frame.
-      scheduleAnimation();
+      const previousTasks = tasksRef.current;
+      isCompleteRef.current = false;
+      setIsComplete(false);
+      buildSnapshot(previousTasks, restart);
+      updateConstruction(performance.now());
+      scheduleRef.current();
     };
 
-    const onResize = () => {
-      registerElements();
-      updateConstruction(performance.now());
-      scheduleAnimation();
+    const updateMotionPreference = (matches: boolean) => {
+      reducedMotionRef.current = matches;
+      setReducedMotion(matches);
+      if (matches) {
+        isCompleteRef.current = true;
+        restoreSnapshot();
+        setActiveCursors([]);
+        setPipelineStats({
+          working: 0,
+          queued: 0,
+          done: tasksRef.current.length,
+        });
+        setPageProgress(100);
+        setIsComplete(true);
+        setIsRoaming(false);
+        transitionPhase("VIEWPORT_IDLE");
+      } else if (isCompleteRef.current) {
+        isCompleteRef.current = false;
+        setIsComplete(false);
+        refresh(true);
+      }
     };
 
-    const timer = window.setTimeout(() => {
-      registerElements();
-      updateConstruction(performance.now());
-      scheduleAnimation();
+    const onMotionChange = (event: MediaQueryListEvent) =>
+      updateMotionPreference(event.matches);
+
+    const start = () => {
+      if (disposed || started) return;
+      scrollVelocityRef.current = 0;
+      scrollVelocityAtRef.current = 0;
+      lastScrollSamplesRef.current = new WeakMap();
+      const initialScrollPosition =
+        document.scrollingElement?.scrollTop ?? window.scrollY;
+      const initialScrollSample = {
+        position: initialScrollPosition,
+        time: performance.now(),
+      };
+      lastScrollSamplesRef.current.set(document, initialScrollSample);
+      lastScrollSamplesRef.current.set(window, initialScrollSample);
+      if (startTimer !== null) {
+        window.clearTimeout(startTimer);
+        startTimer = null;
+      }
+      if (document.querySelector(".splash-screen:not(.splash-screen--hide)")) {
+        if (!splashObserver) {
+          splashObserver = new MutationObserver(() => {
+            if (
+              !document.querySelector(
+                ".splash-screen:not(.splash-screen--hide)",
+              )
+            ) {
+              splashObserver?.disconnect();
+              splashObserver = null;
+              start();
+            }
+          });
+          const splash = document.querySelector(".splash-screen");
+          if (splash) {
+            splashObserver.observe(splash, {
+              attributes: true,
+              attributeFilter: ["class"],
+            });
+          }
+        }
+        startTimer = window.setTimeout(start, 700);
+        return;
+      }
+
+      started = true;
+      isCompleteRef.current = false;
+      setIsComplete(false);
+      setIsSkipped(false);
+      setIsRoaming(false);
+      setPageProgress(0);
+      setPipelineStats({ working: 0, queued: 0, done: 0 });
+      activityRef.current = [];
+      setActivityLog([]);
+      if (reducedMotionRef.current) {
+        setActiveCursors([]);
+        transitionPhase("VIEWPORT_IDLE");
+        updateMotionPreference(true);
+      } else {
+        transitionPhase("INTRO_GATHER");
+        buildSnapshot([], true);
+        const anchor = getBrandAnchor();
+        setActiveCursors(
+          AGENT_POOL.slice(0, 8).map((agent, index) => {
+            const angle = (index / 8) * Math.PI * 2;
+            return {
+              agent,
+              x: anchor.x + Math.cos(angle) * 18,
+              y: anchor.y + Math.sin(angle) * 18,
+            };
+          }),
+        );
+        introTimer = window.setTimeout(() => {
+          introTimer = null;
+          if (disposed || reducedMotionRef.current || isCompleteRef.current) {
+            setActiveCursors([]);
+            return;
+          }
+          setActiveCursors([]);
+          transitionPhase("FAN_OUT");
+          updateConstruction(performance.now());
+          scheduleRef.current();
+        }, 560);
+      }
 
       mutationObserver = new MutationObserver((records) => {
-        if (records.some((record) => record.addedNodes.length > 0)) {
-          scheduleRegistration();
+        const changedPageContent = records.some((record) => {
+          if (
+            record.target instanceof Element &&
+            record.target.closest(
+              "#construction-hud, #agent-activity-log, .construction-reconstruction-layer",
+            )
+          ) {
+            return false;
+          }
+          return (
+            record.target instanceof Element &&
+            Boolean(record.target.closest("header, main, footer"))
+          );
+        });
+        if (changedPageContent && introTimer === null && refreshFrame === null) {
+          refreshFrame = window.requestAnimationFrame(() => {
+            refreshFrame = null;
+            if (!disposed) refresh();
+          });
         }
       });
-      mutationObserver.observe(document.body, { childList: true, subtree: true });
-
-      if (typeof ResizeObserver !== "undefined") {
-        bodyResizeObserver = new ResizeObserver(scheduleRegistration);
-        bodyResizeObserver.observe(document.body);
-      }
-
-      document.fonts?.ready.then(() => {
-        if (!disposed) scheduleRegistration();
+      mutationObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
       });
 
-      const splash = document.querySelector(".splash-screen");
-      if (splash) {
-        splashObserver = new MutationObserver(() => {
-          updateConstruction(performance.now());
-          scheduleAnimation();
-        });
-        splashObserver.observe(splash, {
-          attributes: true,
-          attributeFilter: ["class"],
-        });
-      }
-    }, 120);
+    };
 
+    const onScroll = (event: Event) => {
+      const target = event.target;
+      const sampleTarget = target ?? window;
+      const position =
+        target instanceof HTMLElement
+          ? target.scrollTop
+          : document.scrollingElement?.scrollTop ?? window.scrollY;
+      const now = performance.now();
+      const previous = lastScrollSamplesRef.current.get(sampleTarget);
+      if (previous && position !== previous.position) {
+        const elapsed = Math.max(1, now - previous.time);
+        scrollVelocityRef.current =
+          (Math.abs(position - previous.position) / elapsed) *
+          (1000 / Math.max(1, window.innerHeight));
+        scrollVelocityAtRef.current = now;
+      }
+      lastScrollSamplesRef.current.set(sampleTarget, { position, time: now });
+      scheduleRef.current();
+    };
+    const onWheel = (event: WheelEvent) => {
+      const now = performance.now();
+      const pagePosition =
+        document.scrollingElement?.scrollTop ?? window.scrollY;
+      const pageSample = { position: pagePosition, time: now };
+      lastScrollSamplesRef.current.set(document, pageSample);
+      lastScrollSamplesRef.current.set(window, pageSample);
+
+      let scrollContainer =
+        event.target instanceof HTMLElement
+          ? event.target
+          : event.target instanceof Element
+            ? event.target.parentElement
+            : null;
+      while (scrollContainer && scrollContainer !== document.body) {
+        const style = window.getComputedStyle(scrollContainer);
+        if (
+          scrollContainer.scrollHeight > scrollContainer.clientHeight &&
+          /^(auto|overlay|scroll)$/.test(style.overflowY)
+        ) {
+          lastScrollSamplesRef.current.set(scrollContainer, {
+            position: scrollContainer.scrollTop,
+            time: now,
+          });
+          break;
+        }
+        scrollContainer = scrollContainer.parentElement;
+      }
+      scheduleRef.current();
+    };
+    const onResize = () => refresh();
+
+    updateMotionPreference(mediaQuery.matches);
+    mediaQuery.addEventListener("change", onMotionChange);
     window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("scroll", onScroll, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });
-    document.addEventListener("load", scheduleRegistration, true);
+
+    const waitForStableLayout = async () => {
+      await Promise.race([
+        document.fonts?.ready ?? Promise.resolve(),
+        new Promise<void>((resolve) => {
+          stableTimer = window.setTimeout(resolve, MAX_SNAPSHOT_WAIT_MS);
+        }),
+      ]);
+      if (stableTimer !== null) {
+        window.clearTimeout(stableTimer);
+        stableTimer = null;
+      }
+      if (disposed) return;
+      start();
+    };
+    void waitForStableLayout();
 
     return () => {
       disposed = true;
-      window.clearTimeout(timer);
+      if (startTimer !== null) window.clearTimeout(startTimer);
+      if (introTimer !== null) window.clearTimeout(introTimer);
+      if (replayTimerRef.current !== null) {
+        window.clearTimeout(replayTimerRef.current);
+        replayTimerRef.current = null;
+      }
+      if (stableTimer !== null) window.clearTimeout(stableTimer);
+      if (refreshFrame !== null) window.cancelAnimationFrame(refreshFrame);
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       mutationObserver?.disconnect();
-      bodyResizeObserver?.disconnect();
       splashObserver?.disconnect();
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-      document.removeEventListener("load", scheduleRegistration, true);
-
-      if (registrationFrame !== null) window.cancelAnimationFrame(registrationFrame);
-      if (rafRef.current !== null) window.cancelAnimationFrame(rafRef.current);
-      if (signatureTimeoutRef.current !== null) window.clearTimeout(signatureTimeoutRef.current);
-      if (scrollSettleTimeoutRef.current !== null) window.clearTimeout(scrollSettleTimeoutRef.current);
       mediaQuery.removeEventListener("change", onMotionChange);
-      scheduleAnimationRef.current = () => undefined;
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("resize", onResize);
+      restoreSnapshot(false);
+      tasksRef.current = [];
+      isCompleteRef.current = false;
     };
-  }, [pathname, registerElements, updateConstruction]);
-
-  if (!isMounted || reducedMotion) return null;
+  }, [
+    buildSnapshot,
+    pathname,
+    restoreSnapshot,
+    transitionPhase,
+    updateConstruction,
+  ]);
 
   return (
     <>
-      <BorderTracingLayer activeBorders={activeBorders} />
-
       <div
-        className="fixed inset-0 pointer-events-none z-44 overflow-hidden"
+        ref={layerRef}
+        className="construction-reconstruction-layer fixed inset-0 z-[30] pointer-events-none"
+        data-construction-phase={phase}
+        style={{
+          display: hasSnapshot && !isComplete && !reducedMotion ? "block" : "none",
+          overflow: "visible",
+        }}
         aria-hidden="true"
-      >
-        {constructionPaintGrids.map((grid) => {
-          const tileCount = grid.columns * grid.rows;
-          const paintedCount = Math.ceil(grid.progress * tileCount);
-          return (
-            <div
-              key={grid.id}
-              className="construction-paint-grid"
-              style={{
-                left: grid.left,
-                top: grid.top,
-                width: grid.width,
-                height: grid.height,
-                gridTemplateColumns: "repeat(" + grid.columns + ", minmax(0, 1fr))",
-                gridTemplateRows: "repeat(" + grid.rows + ", minmax(0, 1fr))",
-              }}
-            >
-              {Array.from({ length: tileCount }, (_, index) => (
-                <span
-                  key={index}
-                  className="construction-paint-grid__tile"
-                  style={{
-                    backgroundColor: grid.color,
-                    opacity: index < paintedCount ? 0.2 : 0,
-                  }}
-                />
-              ))}
-            </div>
-          );
-        })}
+        inert
+      />
 
-        {selectionOverlays.map((overlay) => (
-          <div
-            key={overlay.id}
-            className="construction-selection"
-            style={{
-              left: overlay.left - 3,
-              top: overlay.top - 3,
-              width: overlay.width + 6,
-              height: overlay.height + 6,
-              borderColor: overlay.color,
-              color: overlay.color,
-              opacity: overlay.stage === "mark" ? 1 : 0.82,
-            }}
-          >
-            <span className="construction-selection__label">
-              {overlay.label}
-            </span>
-            <span className="construction-selection__handle construction-selection__handle--tl" />
-            <span className="construction-selection__handle construction-selection__handle--tr" />
-            <span className="construction-selection__handle construction-selection__handle--bl" />
-            <span className="construction-selection__handle construction-selection__handle--br" />
-            <span
-              className="construction-selection__sweep"
-              style={{
-                transform: "scaleX(" + overlay.progress + ")",
-                backgroundColor: overlay.color,
-              }}
-            />
-          </div>
-        ))}
-
-        {constructionParcels.map((parcel) => (
-          <div
-            key={parcel.id}
-            className="construction-parcel"
-            style={{
-              left: parcel.left,
-              top: parcel.top,
-              width: parcel.width,
-              height: parcel.height,
-              borderColor: parcel.color,
-              boxShadow: "0 0 26px " + parcel.color + "35",
-              opacity: 0.2 + parcel.progress * 0.8,
-            }}
-          >
-            <div className="construction-parcel__top">
-              <span style={{ color: parcel.color }}>MAKE / IN TRANSIT</span>
-              <span>●</span>
-            </div>
-            <div className="construction-parcel__title">
-              {parcel.label || "Content block"}
-            </div>
-            <div className="construction-parcel__skeleton">
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div
-        className="fixed inset-0 pointer-events-none z-45 overflow-hidden"
-        aria-hidden="true"
-      >
-        {activeCursors.map((cursor, index) => (
-          <AgentCursor
-            key={cursor.agent.id + "-" + index}
-            agent={cursor.agent}
-            x={cursor.x}
-            y={cursor.y}
-            actionText={cursor.actionText}
-            isClicking={cursor.isClicking}
-            isVisible={true}
-            isWorking={cursor.isWorking}
-            showLabel={cursor.showLabel}
-            roleLabel={cursor.roleLabel}
-            cursorSize={cursor.cursorSize}
-            opacity={cursor.opacity}
-          />
-        ))}
-      </div>
-
-      <RiadSignature
-        progress={signatureProgress}
-        isVisible={signatureVisible}
-        left={signaturePosition.left}
-        top={signaturePosition.top}
-        width={signaturePosition.width}
-        opacity={signatureOpacity}
+      <SwarmCursorLayer
+        cursors={activeCursors}
+        isRoaming={isRoaming}
+        isFlocking={isComplete && !isSkipped}
+        reducedMotion={reducedMotion}
       />
 
       <div
         id="construction-hud"
-        className="fixed bottom-5 left-4 sm:left-6 z-50 select-none pointer-events-none"
+        className="fixed bottom-5 left-4 z-50 select-none pointer-events-none sm:left-6"
       >
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-950/90 border border-zinc-800/80 shadow-2xl backdrop-blur-xl text-[10px] font-mono text-zinc-300">
-          <span className="font-bold text-white">AGENT WORKFLOW</span>
-          <span className="text-cyan-300 bg-cyan-500/10 px-1.5 py-0.5 rounded">
-            PAGE {pageProgress}%
+        <div className="construction-hud__panel pointer-events-auto flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-2 rounded-2xl border border-zinc-800/80 bg-zinc-950/90 px-3 py-2 text-[10px] font-mono text-zinc-300 shadow-2xl backdrop-blur-xl">
+          <span className="font-bold text-white">SWARM BUILD</span>
+          <span
+            role="progressbar"
+            aria-label="Website construction progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pageProgress}
+            className="text-cyan-300"
+          >
+            BUILD {pageProgress}%
           </span>
           <span className="text-emerald-300">WORK {pipelineStats.working}</span>
           <span className="text-amber-300">QUEUE {pipelineStats.queued}</span>
-          <span className="text-sky-300">DONE {pipelineStats.done}</span>
-          <span className="text-zinc-500">POOL 24</span>
+          <span className="text-sky-300">
+            {isComplete ? (isSkipped ? "SKIPPED" : "COMPLETE") : `DONE ${pipelineStats.done}`}
+          </span>
+          <span className="text-zinc-500">{AGENT_POOL.length} AGENTS</span>
+          <button
+            type="button"
+            onClick={skipConstruction}
+            disabled={isComplete || reducedMotion}
+            className="rounded-md border border-zinc-700 px-2 py-1 text-zinc-200 transition-colors hover:border-cyan-400 hover:text-white disabled:cursor-default disabled:opacity-50"
+            aria-label="Skip website construction animation"
+          >
+            SKIP
+          </button>
+          <button
+            type="button"
+            onClick={replayConstruction}
+            disabled={!isComplete || reducedMotion}
+            className="rounded-md border border-cyan-500/40 px-2 py-1 text-cyan-200 transition-colors hover:border-cyan-300 hover:text-white disabled:cursor-default disabled:opacity-40"
+            aria-label="Replay website construction animation"
+          >
+            REPLAY
+          </button>
+          {reducedMotion && (
+            <span className="text-zinc-500" role="status">
+              Reduced motion
+            </span>
+          )}
         </div>
       </div>
 
-      <div
-        id="agent-activity-log"
-        className="fixed bottom-5 right-4 sm:right-6 z-50 w-[220px] sm:w-[250px] pointer-events-none select-none"
-      >
-        <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/82 backdrop-blur-xl shadow-2xl px-3 py-2.5">
-          <div className="flex items-center justify-between gap-2 pb-2 border-b border-zinc-800/70">
-            <span className="text-[10px] font-mono font-bold tracking-wide text-zinc-200">
-              AGENT ACTIVITY
-            </span>
-            <span className="text-[9px] font-mono text-zinc-500">24 POOL</span>
-          </div>
-          <div className="space-y-1.5 pt-2">
-            {activityLog.length === 0 ? (
-              <div className="text-[9px] font-mono text-zinc-500">
-                Waiting for visible blocks...
-              </div>
-            ) : (
-              activityLog.slice(0, 4).map((entry) => (
-                <div key={entry.id} className="flex items-start gap-1.5 text-[9px] font-mono leading-tight">
-                  <span
-                    className="mt-0.5 shrink-0 w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: entry.color }}
-                  />
-                  <span className="text-zinc-300 line-clamp-2">{entry.text}</span>
+      {pipelineStats.working > 0 && (
+        <div
+          id="agent-activity-log"
+          className="fixed bottom-5 right-4 z-50 w-[220px] select-none pointer-events-none sm:right-6 sm:w-[250px]"
+          aria-hidden="true"
+        >
+          <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/85 px-3 py-2.5 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-2 border-b border-zinc-800/70 pb-2">
+              <span className="text-[10px] font-mono font-bold tracking-wide text-zinc-200">
+                AGENT ACTIVITY
+              </span>
+              <span className="text-[9px] font-mono text-zinc-500">
+                {AGENT_POOL.length} POOL
+              </span>
+            </div>
+            <div className="space-y-1.5 pt-2">
+              {activityLog.length === 0 ? (
+                <div className="text-[9px] font-mono text-zinc-500">
+                  Waiting for visible work...
                 </div>
-              ))
-            )}
+              ) : (
+                activityLog.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-start gap-1.5 text-[9px] font-mono leading-tight"
+                  >
+                    <span
+                      className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: entry.color }}
+                    />
+                    <span className="line-clamp-2 text-zinc-300">{entry.text}</span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
